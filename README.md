@@ -1,5 +1,5 @@
 # WillSmith
-Custom gemini CLI client. 
+Custom gemini CLI client for linux. 
 ## WIP
 
 # Navigation
