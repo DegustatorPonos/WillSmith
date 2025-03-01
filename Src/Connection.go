@@ -24,22 +24,18 @@ func SendRequest(URI string, port int ) *Request{
 		fmt.Printf("Invalid URL")
 		return nil
 	}
-	fmt.Println("Dialing")
 	var conn, err = tls.Dial("tcp", url_parsed.Host+":"+strconv.Itoa(port), &tls.Config{InsecureSkipVerify: true})
 	if err != nil {
 		fmt.Printf("An error occured while sending a request. \n| Original error message: %v\n", err.Error())
 		return nil
 	}
-	fmt.Println("Sending a request")
 	conn.Write([]byte(URI + "\r\n"))
-	fmt.Println("Sent a request")
 	defer conn.Close()
 	
 	// Reading the header
 	conn.Write([]byte(URI))
 	var reader = bufio.NewReader(conn)
 	var header, _ = reader.ReadString('\n')
-	fmt.Println(header)
 	var RespCode, HeaderParsingErr = ParseResponceHeader(header)
 	if HeaderParsingErr != nil {
 		fmt.Printf("An error occured while parsing a responce header. \n| Original error message: %v\n", HeaderParsingErr.Error())
