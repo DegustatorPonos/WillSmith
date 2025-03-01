@@ -26,12 +26,18 @@ func ReadRequest(r *Request) *Page {
 			outp.Text = append(outp.Text, str)
 			continue
 		}
-		for i :=0; i < len(str); i += width {
-			var rightSide = i + width
+		var rightSide = 0
+		for i :=0; i < len(str); i = rightSide {
+			rightSide = i + width
 			if rightSide >= len(str) {
 				rightSide = len(str)
+				outp.Text = append(outp.Text, strings.Trim(str[i:rightSide], " "))
+				continue
 			}
-			outp.Text = append(outp.Text, str[i:rightSide])
+			for(rightSide > 0 && str[rightSide] != '\n' && str[rightSide] != ' ') {
+				rightSide--
+			}
+			outp.Text = append(outp.Text, strings.Trim(str[i:rightSide], " "))
 		}
 	}
 	return &outp

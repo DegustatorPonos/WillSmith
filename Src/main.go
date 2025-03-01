@@ -12,7 +12,7 @@ import (
 	"golang.org/x/term"
 )
 
-const VersionName string = "0.2.1a"
+const VersionName string = "0.2.2a"
 const HomePage string = "gemini://geminiprotocol.net/"
 
 func main() {
@@ -62,6 +62,28 @@ func main() {
 				currentPage.ScrollOffser -= uint(height / 2)
 			} else {
 				currentPage.ScrollOffser = 0
+			}
+			continue
+		case "}": // Go until the next white space
+			if(int(currentPage.ScrollOffser) >= len(currentPage.Text)) {
+				currentPage.ScrollOffser = uint(len(currentPage.Text) - 1)
+			}
+			currentPage.ScrollOffser += 1;
+			for(int(currentPage.ScrollOffser) < len(currentPage.Text) && currentPage.Text[currentPage.ScrollOffser] != "") {
+				currentPage.ScrollOffser += 1;
+			}
+			currentPage.ScrollOffser += 1;
+			continue
+		case "{": // Go until the pervious white space
+			if(currentPage.ScrollOffser < 2) {
+				continue
+			}
+			if(int(currentPage.ScrollOffser) >= len(currentPage.Text)) {
+				currentPage.ScrollOffser = uint(len(currentPage.Text) - 1)
+			}
+			currentPage.ScrollOffser -= 2;
+			for(int(currentPage.ScrollOffser) > 0 && currentPage.Text[currentPage.ScrollOffser] != "") {
+				currentPage.ScrollOffser -= 1;
 			}
 			continue
 		case ":q": // Exit the app
