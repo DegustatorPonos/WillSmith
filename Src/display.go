@@ -46,7 +46,7 @@ func ParseLink(inp string) string {
 
 func DisplayPage(page *Page) {
 	var _, height, _ = term.GetSize(0)
-	height -= 4 // Subtract 2 lines, status line and command line
+	height -= 5 // Subtract 2 lines, status line and command line
 	for i := range height {
 		if(uint(len(page.Text)) > uint(i) + page.ScrollOffser) {
 			fmt.Println(page.Text[i + int(page.ScrollOffser)])
