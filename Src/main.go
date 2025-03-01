@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -12,7 +13,7 @@ import (
 	"golang.org/x/term"
 )
 
-const VersionName string = "0.3a"
+const VersionName string = "0.3.1a"
 const HomePage string = "gemini://geminiprotocol.net/"
 const HomePageFile string = "file://../StaticPages/IndexPage"
 
@@ -100,7 +101,18 @@ func main() {
 
 		if slices.Contains(currentPage.Links, TrimmedCommand) {
 			fmt.Print("Navigating to a next page...")
-			currntIndex, history = DirectToANewPage(strings.Join([]string{history[currntIndex], TrimmedCommand, "/"}, ""), history, currntIndex, currentPage)
+			var baseURI = history[currntIndex]
+			var newURI = ""
+			if !(IsAnEndpoint(baseURI)) {
+				baseURI = GoBackOneLayer(baseURI)
+			}
+			if strings.HasSuffix(baseURI, "/") {
+				newURI = strings.Join([]string{baseURI, TrimmedCommand, "/"}, "")
+			} else {
+				newURI = strings.Join([]string{baseURI, "/", TrimmedCommand, "/"}, "")
+			}
+			newURI = CompactAllBackwardsMotions(newURI)
+			currntIndex, history = DirectToANewPage(newURI, history, currntIndex, currentPage)
 			continue
 		}
 
@@ -160,4 +172,9 @@ func WriteLine(Width int) {
 		fmt.Print("=")
 	}
 	fmt.Println()
+}
+
+func IsAnEndpoint(inp string) bool {
+	var r = regexp.MustCompile(`\/[^\/:]*\.[^\/:]*\/?$`)
+	return r.FindString(inp) == ""
 }

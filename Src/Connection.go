@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -76,4 +77,18 @@ func ServeFile(link string) *Request {
 	}
 	var outp = Request{ResultCode: 20, Body: file}
 	return &outp
+}
+
+func CompactAllBackwardsMotions(inp string) string {
+	var outp = strings.Clone(inp)
+	var r = regexp.MustCompile(`\/[^\/:]*\/\.\.\/`)
+	for len(r.FindAllString(outp, 1)) > 0 {
+		outp = r.ReplaceAllString(outp, "/")
+	}
+	return outp
+}
+
+func GoBackOneLayer(inp string) string {
+	var r = regexp.MustCompile(`\/[^\/:]*\/?$`)
+	return r.ReplaceAllString(inp, "")
 }
