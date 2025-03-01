@@ -32,7 +32,6 @@ func main() {
 			currentPage = ReadRequest(resp)
 			PrevCurrentIndex = currntIndex
 		}
-		fmt.Printf("Trying to access %v\n", history[currntIndex])
 		var newwidth, newheight, _ = term.GetSize(0)
 		if(newheight != height || newwidth != width) {
 			height = newheight
@@ -47,12 +46,27 @@ func main() {
 		fmt.Print("Enter command: >")
 		var command, _ = reader.ReadString('\n')
 		var TrimmedCommand = strings.TrimRight(command, "\n")
-		if (TrimmedCommand == "..") {
-			fmt.Println("Detected backward")
+
+		// Handling commands
+		switch(TrimmedCommand) {
+		case "..":
 			if(currntIndex >= 1) {
 				currntIndex -= 1
 			}
 			continue
+		case "/":
+			currentPage.ScrollOffser += uint(height / 2)
+			continue
+		case "\\":
+			if(currentPage.ScrollOffser > uint(height / 2)) {
+				currentPage.ScrollOffser -= uint(height / 2)
+			} else {
+				currentPage.ScrollOffser = 0
+			}
+			continue
+		}
+		if (TrimmedCommand == "..") {
+			fmt.Println("Detected backward")
 		}
 		if strings.HasPrefix(TrimmedCommand, "gemini://") {
 			fmt.Println("Detected link")
@@ -78,7 +92,6 @@ func main() {
 			currentPage = ReadRequest(resp)
 			continue
 		}
-		fmt.Println(command)
 	}
 }
 
