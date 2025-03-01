@@ -18,6 +18,8 @@ Custom gemini CLI client for linux.
 # TODO:
 - [x] Add a navigation between different pages
 - [x] Add scrolling support
-- [ ] Index page
-- [ ] Custom error code messages
+- [x] Index page
+- [x] Custom error code messages
 - [ ] Cashing pages
+- [ ] Better navigation(Go to topics, etc)
+- [ ] More commands to control flow

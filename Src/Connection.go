@@ -18,6 +18,9 @@ type Request struct {
 
 const DEFAULT_PORT int = 1965
 
+const ERR_HOST_NOT_FOUND string = "file://../StaticPages/Errors/NotFound"
+const ERR_BODY_READ string = "file://../StaticPages/Errors/BodyErr"
+
 // Sends a request to the server and returns a responce
 func SendRequest(URI string, port int ) *Request{
 	if(strings.HasPrefix(URI, "file")) {
@@ -26,12 +29,11 @@ func SendRequest(URI string, port int ) *Request{
 	var url_parsed, urlerr = url.Parse(URI)
 	if urlerr != nil {
 		fmt.Printf("Invalid URL")
-		return nil
+		return ServeFile(ERR_HOST_NOT_FOUND)
 	}
 	var conn, err = tls.Dial("tcp", url_parsed.Host+":"+strconv.Itoa(port), &tls.Config{InsecureSkipVerify: true})
 	if err != nil {
-		fmt.Printf("An error occured while sending a request. \n| Original error message: %v\n", err.Error())
-		return nil
+		return ServeFile(ERR_HOST_NOT_FOUND)
 	}
 	conn.Write([]byte(URI + "\r\n"))
 	defer conn.Close()
@@ -42,13 +44,11 @@ func SendRequest(URI string, port int ) *Request{
 	var header, _ = reader.ReadString('\n')
 	var RespCode, HeaderParsingErr = ParseResponceHeader(header)
 	if HeaderParsingErr != nil {
-		fmt.Printf("An error occured while parsing a responce header. \n| Original error message: %v\n", HeaderParsingErr.Error())
-		return nil
+		return ServeFile(ERR_BODY_READ)
 	}
 	var body, bodyReadingErr = io.ReadAll(reader)
 	if bodyReadingErr != nil {
-		fmt.Printf("An error occured while reading a responce body. \n| Original error message: %v\n", bodyReadingErr.Error())
-		return nil
+		return ServeFile(ERR_BODY_READ)
 	} 
 
 	var outp = Request{ResultCode: RespCode, Body: body}
