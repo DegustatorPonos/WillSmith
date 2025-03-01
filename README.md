@@ -14,5 +14,8 @@ Custom gemini CLI client for linux.
 - run ```go run .``` in Src/
 
 # TODO:
-- Add a navigation between different pages
-- Add scrolling support
+- [x] Add a navigation between different pages
+- [x] Add scrolling support
+- [ ] Index page
+- [ ] Custom error code messages
+- [ ] Cashing pages
