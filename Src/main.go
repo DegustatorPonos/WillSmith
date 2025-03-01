@@ -13,7 +13,7 @@ import (
 	"golang.org/x/term"
 )
 
-const VersionName string = "0.3.1a"
+const VersionName string = "0.3.2a"
 const HomePage string = "gemini://geminiprotocol.net/"
 const HomePageFile string = "file://../StaticPages/IndexPage"
 
@@ -106,7 +106,7 @@ func main() {
 			if !(IsAnEndpoint(baseURI)) {
 				baseURI = GoBackOneLayer(baseURI)
 			}
-			if strings.HasSuffix(baseURI, "/") {
+			if strings.HasSuffix(baseURI, "/") || strings.HasPrefix(TrimmedCommand, "/") {
 				newURI = strings.Join([]string{baseURI, TrimmedCommand, "/"}, "")
 			} else {
 				newURI = strings.Join([]string{baseURI, "/", TrimmedCommand, "/"}, "")
@@ -175,6 +175,6 @@ func WriteLine(Width int) {
 }
 
 func IsAnEndpoint(inp string) bool {
-	var r = regexp.MustCompile(`\/[^\/:]*\.[^\/:]*\/?$`)
+	var r = regexp.MustCompile(`\/[^\/:]*\.gmi\/?$`)
 	return r.FindString(inp) == ""
 }

@@ -19,7 +19,7 @@ func ReadRequest(r *Request) *Page {
 	outp.Links = make([]string, 0)
 	var width, _, _ = term.GetSize(0)
 	for _, str := range strings.Split(string(r.Body), "\n") {
-		if strings.HasPrefix(str, "=> ") {
+		if strings.HasPrefix(str, "=>") {
 			outp.Links = append(outp.Links, ParseLink(str))
 		}
 		if len(str) < width {
@@ -46,7 +46,7 @@ func ReadRequest(r *Request) *Page {
 func ParseLink(inp string) string {
 	var prefixless, _ = strings.CutPrefix(inp, "=> ")
 	var pureLink = strings.Split(prefixless, "	")[0]
-	pureLink = strings.Split(prefixless, " ")[0]
+//	pureLink = strings.Split(prefixless, " ")[0]
 	var outp, _ = strings.CutSuffix(pureLink, "/")
 	return outp
 }
