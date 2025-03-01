@@ -12,4 +12,4 @@ Type the link to go to it, e.g. ```=> news/ ``` can be accessed with ```news``` 
 
 # TODO:
 - Add a navigation between different pages
-- ????
+- Add scrolling support
