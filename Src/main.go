@@ -12,14 +12,15 @@ import (
 	"golang.org/x/term"
 )
 
-const VersionName string = "0.2.2a"
+const VersionName string = "0.3a"
 const HomePage string = "gemini://geminiprotocol.net/"
+const HomePageFile string = "file://../StaticPages/IndexPage"
 
 func main() {
 	var history = make([]string, 1)
+	history[0] = HomePageFile
 	var currntIndex = 0
 	var PrevCurrentIndex = 0
-	history[0] = HomePage
 	var reader = bufio.NewReader(os.Stdin)
 
 	var resp = SendRequest(history[currntIndex], DEFAULT_PORT)

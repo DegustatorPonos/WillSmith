@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -19,6 +20,9 @@ const DEFAULT_PORT int = 1965
 
 // Sends a request to the server and returns a responce
 func SendRequest(URI string, port int ) *Request{
+	if(strings.HasPrefix(URI, "file")) {
+		return ServeFile(URI)
+	}
 	var url_parsed, urlerr = url.Parse(URI)
 	if urlerr != nil {
 		fmt.Printf("Invalid URL")
@@ -61,4 +65,15 @@ func ParseResponceHeader(inp string) (byte, error) {
 		return 0, fmt.Errorf("Error while parsing the request header")
 	}
 	return byte(ResponceCode), nil;
+}
+
+// Serves the file as a responce. Invoked when it starts with file://
+func ServeFile(link string) *Request {
+	var FilePath = strings.TrimPrefix(link, "file://")
+	var file, fopenerr = os.ReadFile(FilePath)
+	if fopenerr != nil {
+		return &Request{ResultCode: 40}
+	}
+	var outp = Request{ResultCode: 20, Body: file}
+	return &outp
 }
