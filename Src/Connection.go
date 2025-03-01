@@ -1,0 +1,68 @@
+package main
+
+import (
+	"bufio"
+	"crypto/tls"
+	"fmt"
+	"io"
+	"net/url"
+	"strconv"
+	"strings"
+)
+
+type Request struct {
+	ResultCode byte
+	Body []byte
+}
+
+const DEFAULT_PORT int = 1965
+
+// Sends a request to the server and returns a responce
+func SendRequest(URI string, port int ) *Request{
+	var url_parsed, urlerr = url.Parse(URI)
+	if urlerr != nil {
+		fmt.Printf("Invalid URL")
+		return nil
+	}
+	fmt.Println("Dialing")
+	var conn, err = tls.Dial("tcp", url_parsed.Host+":"+strconv.Itoa(port), &tls.Config{InsecureSkipVerify: true})
+	if err != nil {
+		fmt.Printf("An error occured while sending a request. \n| Original error message: %v\n", err.Error())
+		return nil
+	}
+	fmt.Println("Sending a request")
+	conn.Write([]byte(URI + "\r\n"))
+	fmt.Println("Sent a request")
+	defer conn.Close()
+	
+	// Reading the header
+	conn.Write([]byte(URI))
+	var reader = bufio.NewReader(conn)
+	var header, _ = reader.ReadString('\n')
+	fmt.Println(header)
+	var RespCode, HeaderParsingErr = ParseResponceHeader(header)
+	if HeaderParsingErr != nil {
+		fmt.Printf("An error occured while parsing a responce header. \n| Original error message: %v\n", HeaderParsingErr.Error())
+		return nil
+	}
+	var body, bodyReadingErr = io.ReadAll(reader)
+	if bodyReadingErr != nil {
+		fmt.Printf("An error occured while reading a responce body. \n| Original error message: %v\n", bodyReadingErr.Error())
+		return nil
+	} 
+
+	var outp = Request{ResultCode: RespCode, Body: body}
+	return &outp
+}
+
+func ParseResponceHeader(inp string) (byte, error) {
+	var parts = strings.Split(inp, " ")
+	if(len(parts) < 2) {
+		return 0, fmt.Errorf("Invalid header")
+	}
+	var ResponceCode,CodeParsingErr = strconv.Atoi(parts[0])
+	if CodeParsingErr != nil {
+		return 0, fmt.Errorf("Error while parsing the request header")
+	}
+	return byte(ResponceCode), nil;
+}
