@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Request struct {
@@ -25,6 +27,10 @@ const ERR_TEMP_FALIURE string = "file://../StaticPages/Errors/TempFaliure"
 const ERR_PERMA_ERROR string = "file://../StaticPages/Errors/PermaError"
 const ERR_CLIENT_CERTS string = "file://../StaticPages/Errors/ClientCerts"
 
+var conf = &tls.Config{
+	InsecureSkipVerify: true,
+}
+
 // Sends a request to the server and returns a responce
 func SendRequest(URI string, port int ) *Request{
 	if(strings.HasPrefix(URI, "file")) {
@@ -35,7 +41,12 @@ func SendRequest(URI string, port int ) *Request{
 		fmt.Printf("Invalid URL")
 		return ServeFile(ERR_HOST_NOT_FOUND)
 	}
-	var conn, err = tls.Dial("tcp", url_parsed.Host+":"+strconv.Itoa(port), &tls.Config{InsecureSkipVerify: true})
+	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	d := tls.Dialer{
+		Config: conf,
+	}
+	var conn, err = d.DialContext(ctx, "tcp", url_parsed.Host+":"+strconv.Itoa(port))
+	cancel()
 	if err != nil {
 		return ServeFile(ERR_HOST_NOT_FOUND)
 	}

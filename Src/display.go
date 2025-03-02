@@ -45,8 +45,13 @@ func ReadRequest(r *Request) *Page {
 
 func ParseLink(inp string) string {
 	var prefixless, _ = strings.CutPrefix(inp, "=> ")
-	var pureLink = strings.Split(prefixless, "	")[0]
-//	pureLink = strings.Split(prefixless, " ")[0]
+	var pureLink = prefixless
+	if strings.Contains(prefixless, "	") {
+		pureLink = strings.Split(prefixless, "	")[0]
+	}
+	if strings.Contains(pureLink, " ") {
+		pureLink = strings.Split(prefixless, " ")[0]
+	}
 	var outp, _ = strings.CutSuffix(pureLink, "/")
 	return outp
 }

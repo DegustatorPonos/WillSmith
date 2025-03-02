@@ -13,7 +13,7 @@ import (
 	"golang.org/x/term"
 )
 
-const VersionName string = "0.3.2a"
+const VersionName string = "0.3.3a"
 const HomePage string = "gemini://geminiprotocol.net/"
 const HomePageFile string = "file://../StaticPages/IndexPage"
 
@@ -48,6 +48,7 @@ func main() {
 		fmt.Print("Enter command: >")
 		var command, _ = reader.ReadString('\n')
 		var TrimmedCommand = strings.TrimRight(command, "\n")
+		TrimmedCommand = strings.Trim(TrimmedCommand, " ")
 
 		// Handling commands
 		switch(TrimmedCommand) {
@@ -101,17 +102,7 @@ func main() {
 
 		if slices.Contains(currentPage.Links, TrimmedCommand) {
 			fmt.Print("Navigating to a next page...")
-			var baseURI = history[currntIndex]
-			var newURI = ""
-			if !(IsAnEndpoint(baseURI)) {
-				baseURI = GoBackOneLayer(baseURI)
-			}
-			if strings.HasSuffix(baseURI, "/") || strings.HasPrefix(TrimmedCommand, "/") {
-				newURI = strings.Join([]string{baseURI, TrimmedCommand, "/"}, "")
-			} else {
-				newURI = strings.Join([]string{baseURI, "/", TrimmedCommand, "/"}, "")
-			}
-			newURI = CompactAllBackwardsMotions(newURI)
+			var newURI = AppendToLink(history[currntIndex], TrimmedCommand)
 			currntIndex, history = DirectToANewPage(newURI, history, currntIndex, currentPage)
 			continue
 		}
@@ -119,7 +110,35 @@ func main() {
 	}
 }
 
-// Returns new index
+func AppendToLink(BaseURI string, ToAppend string) string { 
+	if(len(ToAppend) > 0 && ToAppend[0] == '/') {
+		return strings.Join([]string{StripToHost(BaseURI), strings.Replace(ToAppend, "/", "", 1), "/"}, "")
+	}
+	var newURI = ""
+	if IsAnEndpoint(BaseURI) {
+		BaseURI = GoBackOneLayer(BaseURI)
+	}
+	if strings.HasSuffix(BaseURI, "/") || strings.HasPrefix(ToAppend, "/") {
+		newURI = strings.Join([]string{BaseURI, ToAppend, "/"}, "")
+	} else {
+		newURI = strings.Join([]string{BaseURI, "/", ToAppend, "/"}, "")
+	}
+	return CompactAllBackwardsMotions(newURI)
+}
+
+func StripToHost(URI string) string {
+	// This regex returns the mase address. For example, 
+	// gemini://gemini.circumlunar.space/capcom/ returns gemini://gemini.circumlunar.space/
+	var r = regexp.MustCompile(`gemini:\/\/[^\/:]*\/`)
+	return r.FindString(URI)
+}
+
+func IsAnEndpoint(inp string) bool {
+	var r = regexp.MustCompile(`\/[^\/:]*\.gmi\/?$`)
+	return r.FindString(inp) != ""
+}
+
+// Returns new index and history
 func DirectToANewPage(NewPageURI string, history []string, currntIndex int, currentPage *Page) (int, []string) {
 	if len(history) <= currntIndex + 1 {
 		history = append(history, NewPageURI)
@@ -172,9 +191,4 @@ func WriteLine(Width int) {
 		fmt.Print("=")
 	}
 	fmt.Println()
-}
-
-func IsAnEndpoint(inp string) bool {
-	var r = regexp.MustCompile(`\/[^\/:]*\.gmi\/?$`)
-	return r.FindString(inp) == ""
 }
