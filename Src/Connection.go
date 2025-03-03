@@ -1,5 +1,7 @@
 package main
 
+// Everything related to server connections, routing and data retrival
+
 import (
 	"bufio"
 	"context"
@@ -26,26 +28,27 @@ const ERR_BODY_READ string = "file://../StaticPages/Errors/BodyErr"
 const ERR_TEMP_FALIURE string = "file://../StaticPages/Errors/TempFaliure"
 const ERR_PERMA_ERROR string = "file://../StaticPages/Errors/PermaError"
 const ERR_CLIENT_CERTS string = "file://../StaticPages/Errors/ClientCerts"
+const ERR_INPUT_EXPECTED string = "file://../StaticPages/Errors/InputExpected"
 
 var conf = &tls.Config{
 	InsecureSkipVerify: true,
 }
 
+var dialer = tls.Dialer{
+	Config: conf,
+}
+
 // Sends a request to the server and returns a responce
-func SendRequest(URI string, port int ) *Request{
+func SendRequest(URI string, port int) *Request{
 	if(strings.HasPrefix(URI, "file")) {
 		return ServeFile(URI)
 	}
 	var url_parsed, urlerr = url.Parse(URI)
 	if urlerr != nil {
-		fmt.Printf("Invalid URL")
 		return ServeFile(ERR_HOST_NOT_FOUND)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
-	d := tls.Dialer{
-		Config: conf,
-	}
-	var conn, err = d.DialContext(ctx, "tcp", url_parsed.Host+":"+strconv.Itoa(port))
+	var conn, err = dialer.DialContext(ctx, "tcp", url_parsed.Host+":"+strconv.Itoa(port))
 	cancel()
 	if err != nil {
 		return ServeFile(ERR_HOST_NOT_FOUND)
@@ -70,11 +73,10 @@ func SendRequest(URI string, port int ) *Request{
 	} 
 
 	var outp = Request{ResultCode: RespCode, Body: body}
-
-
 	return &outp
 }
 
+// Returns the responce code and error (if any)
 func ParseResponceHeader(inp string) (byte, error) {
 	var parts = strings.Split(inp, " ")
 	if(len(parts) < 2) {
@@ -87,7 +89,7 @@ func ParseResponceHeader(inp string) (byte, error) {
 	return byte(ResponceCode), nil;
 }
 
-// Serves the file as a responce. Invoked when it starts with file://
+// Serves the file as a responce. Should be invoked when it starts with file://
 func ServeFile(link string) *Request {
 	var FilePath = strings.TrimPrefix(link, "file://")
 	var file, fopenerr = os.ReadFile(FilePath)
@@ -98,6 +100,8 @@ func ServeFile(link string) *Request {
 	return &outp
 }
 
+// If the relative path contains "../" then this function will delete it with the coresponding path part
+// Example: gemini://a/b/../c/ -> gemini://a/c/
 func CompactAllBackwardsMotions(inp string) string {
 	var outp = strings.Clone(inp)
 	var r = regexp.MustCompile(`\/[^\/:]*\/\.\.\/`)
@@ -107,9 +111,10 @@ func CompactAllBackwardsMotions(inp string) string {
 	return outp
 }
 
+// Returns the error message responce that corresponds to a responce code
 func GetErrorMessage(errorCode int) *Request {
 	if(errorCode < 20) {
-		return ServeFile(ERR_PERMA_ERROR)
+		return ServeFile(ERR_INPUT_EXPECTED)
 	}
 	if(errorCode >= 40 && errorCode < 40) {
 		return ServeFile(ERR_TEMP_FALIURE)
@@ -123,7 +128,44 @@ func GetErrorMessage(errorCode int) *Request {
 	return ServeFile(ERR_BODY_READ)
 }
 
+// Returns the path that does not contain the top layer
+// Example: gemini://a/b/c/ -> gemini://a/b
 func GoBackOneLayer(inp string) string {
 	var r = regexp.MustCompile(`\/[^\/:]*\/?$`)
 	return r.ReplaceAllString(inp, "")
 }
+
+// Returns a link that is a relative of ToAppend to BaseURI
+func AppendToLink(BaseURI string, ToAppend string) string { 
+	if(len(ToAppend) > 0 && ToAppend[0] == '/') {
+		return strings.Join([]string{GetHostURI(BaseURI), strings.Replace(ToAppend, "/", "", 1), "/"}, "")
+	}
+	var newURI = ""
+	if IsAnEndpoint(BaseURI) {
+		BaseURI = GoBackOneLayer(BaseURI)
+	}
+	if strings.HasSuffix(BaseURI, "/") || strings.HasPrefix(ToAppend, "/") {
+		newURI = strings.Join([]string{BaseURI, ToAppend}, "")
+	} else {
+		newURI = strings.Join([]string{BaseURI, "/", ToAppend}, "")
+	}
+	if !strings.HasSuffix(newURI, ".gmi") {
+		newURI = strings.Join([]string{newURI, "/"}, "")
+	}
+	return CompactAllBackwardsMotions(newURI)
+}
+
+// Returns the host name of the URI
+func GetHostURI(URI string) string {
+	// This regex returns the mase address. For example, 
+	// gemini://gemini.circumlunar.space/capcom/ returns gemini://gemini.circumlunar.space/
+	var r = regexp.MustCompile(`gemini:\/\/[^\/:]*\/`)
+	return r.FindString(URI)
+}
+
+// Returns true if the link is a gmi file reference
+func IsAnEndpoint(inp string) bool {
+	var r = regexp.MustCompile(`\/[^\/:]*\.gmi\/?$`)
+	return r.FindString(inp) != ""
+}
+

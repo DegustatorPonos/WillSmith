@@ -1,8 +1,14 @@
 package main
 
+// Everything related to rendering
+
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"strconv"
 	"strings"
+
 	"golang.org/x/term"
 )
 
@@ -66,4 +72,47 @@ func DisplayPage(page *Page) {
 			fmt.Println("")
 		}
 	}
+}
+
+func GetStatusBar(ScreenWidth int, ScreenHeight int, URI string, HistoryLength int, ScrollOffset int, PageLength int) string {
+	var sb = strings.Builder{}
+	sb.WriteString(URI)
+	sb.WriteString(" | ")
+	// Page position
+	sb.WriteString("Position: ")
+	sb.WriteString(strconv.Itoa(ScrollOffset))
+	sb.WriteString("-")
+	sb.WriteString(strconv.Itoa(ScrollOffset - 5 + ScreenHeight))
+	sb.WriteString("/")
+	sb.WriteString(strconv.Itoa(PageLength))
+	sb.WriteString(" | ")
+	sb.WriteString("History: ")
+	sb.WriteString(strconv.Itoa(HistoryLength))
+	sb.WriteString(" | ")
+	sb.WriteString("Window size: ")
+	sb.WriteString(strconv.Itoa(ScreenWidth))
+	sb.WriteString(" x ")
+	sb.WriteString(strconv.Itoa(ScreenHeight))
+	sb.WriteString(" | ")
+	sb.WriteString("WillSmith v.")
+	sb.WriteString(VersionName)
+	sb.WriteString(" | ")
+	if(sb.Len() >= ScreenWidth) {
+		return sb.String()[0:ScreenWidth-1]
+	}
+	return sb.String()
+}
+
+func ClearConsole() {
+	var cmd = exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+}
+
+// Writes a line of '=' to the width of the screen
+func WriteLine(Width int) {
+	for range Width {
+		fmt.Print("=")
+	}
+	fmt.Println()
 }
