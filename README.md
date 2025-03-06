@@ -10,6 +10,13 @@ Custom gemini CLI client for linux.
 - ```\``` scrolls the page 1/2 of the screen down (or the first line) 
 - ```}``` and ```{``` to hop between the white spaces up and down
 - ```:q``` to quit. Ctrl-c also works but does not clear the screen
+- ```:r``` to reload the current page
+
+## Collisions
+
+With that navigation scheme some links will colline with common functions. Here are some replacements:
+- ```/``` -> ```//```
+- ```..``` -> ```../```
 
 # BUILDING
 - Specify the home page with HomePage variable in Src/Home.go (temporary solution)
@@ -20,6 +27,7 @@ Custom gemini CLI client for linux.
 - [x] Add scrolling support
 - [x] Index page
 - [x] Custom error code messages
+- [ ] Files downloads
 - [ ] Cashing pages
 - [ ] Better navigation(Go to topics, etc)
 - [ ] More commands to control flow

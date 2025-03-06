@@ -50,8 +50,8 @@ func ReadRequest(r *Request) *Page {
 }
 
 func ParseLink(inp string) string {
-	var prefixless, _ = strings.CutPrefix(inp, "=> ")
-	var pureLink = prefixless
+	var prefixless, _ = strings.CutPrefix(inp, "=>")
+	var pureLink = strings.Trim(prefixless, " ")
 	if strings.Contains(prefixless, "	") {
 		pureLink = strings.Split(prefixless, "	")[0]
 	}
@@ -59,6 +59,12 @@ func ParseLink(inp string) string {
 		pureLink = strings.Split(prefixless, " ")[0]
 	}
 	var outp, _ = strings.CutSuffix(pureLink, "/")
+	switch outp {
+	case ".." :
+		return "../"
+	case "/" :
+		return "//"
+	}
 	return outp
 }
 

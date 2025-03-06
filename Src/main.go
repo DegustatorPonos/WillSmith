@@ -12,7 +12,7 @@ import (
 	"golang.org/x/term"
 )
 
-const VersionName string = "0.3.4a"
+const VersionName string = "0.3.5a"
 const HomePageFile string = "file://../StaticPages/IndexPage"
 
 func main() {
@@ -95,6 +95,10 @@ func main() {
 		case ":q": // Exit the app
 			ClearConsole()
 			return
+		case ":r": // Reload the current page
+			resp = SendRequest(history[currntIndex], DEFAULT_PORT)
+			currentPage = ReadRequest(resp)
+			continue
 		}
 
 		// Going to a page by full link
