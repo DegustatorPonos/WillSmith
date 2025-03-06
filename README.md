@@ -31,3 +31,7 @@ With that navigation scheme some links will colline with common functions. Here 
 - [ ] Cashing pages
 - [ ] Better navigation(Go to topics, etc)
 - [ ] More commands to control flow
+
+## Long-term plans:
+- [ ] Async page loading
+- [ ] Auto-translate some static text/html pages to text/hemeni
