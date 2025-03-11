@@ -114,7 +114,7 @@ func main() {
 		// Going to a page by full link
 		if strings.HasPrefix(TrimmedCommand, "gemini://") {
 			fmt.Print("Navigating to a specified page...")
-			if !strings.HasSuffix(TrimmedCommand, "/") {
+			if !strings.HasSuffix(TrimmedCommand, "/") && !IsAnEndpoint(TrimmedCommand) {
 				TrimmedCommand = strings.Join([]string{TrimmedCommand ,"/"}, "")
 			}
 			currntIndex, history = DirectToANewPage(TrimmedCommand, history, currntIndex, currentPage)
