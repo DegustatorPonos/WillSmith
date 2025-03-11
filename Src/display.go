@@ -24,26 +24,29 @@ func ReadRequest(r *Request) *Page {
 	outp.Text = make([]string, 0)
 	outp.Links = make([]string, 0)
 	var width, _, _ = term.GetSize(0)
-	for _, str := range strings.Split(string(r.Body), "\n") {
-		if strings.HasPrefix(str, "=>") {
-			outp.Links = append(outp.Links, ParseLink(str))
+	for _, rawStr := range strings.Split(string(r.Body), "\n") {
+		var line = rawStr
+		if strings.HasPrefix(rawStr, "=>") {
+			outp.Links = append(outp.Links, ParseLink(line))
+			var Prefixless, _ = strings.CutPrefix(line, "=>")
+			line = strings.Join([]string{"=> [", strconv.Itoa(len(outp.Links) - 1), "]", Prefixless}, "")
 		}
-		if len(str) < width {
-			outp.Text = append(outp.Text, str)
+		if len(line) < width {
+			outp.Text = append(outp.Text, line)
 			continue
 		}
 		var rightSide = 0
-		for i :=0; i < len(str); i = rightSide {
+		for i :=0; i < len(line); i = rightSide {
 			rightSide = i + width
-			if rightSide >= len(str) {
-				rightSide = len(str)
-				outp.Text = append(outp.Text, strings.Trim(str[i:rightSide], " "))
+			if rightSide >= len(line) {
+				rightSide = len(line)
+				outp.Text = append(outp.Text, strings.Trim(line[i:rightSide], " "))
 				continue
 			}
-			for(rightSide > 0 && str[rightSide] != '\n' && str[rightSide] != ' ') {
+			for(rightSide > 0 && line[rightSide] != '\n' && line[rightSide] != ' ') {
 				rightSide--
 			}
-			outp.Text = append(outp.Text, strings.Trim(str[i:rightSide], " "))
+			outp.Text = append(outp.Text, strings.Trim(line[i:rightSide], " "))
 		}
 	}
 	return &outp
@@ -52,11 +55,11 @@ func ReadRequest(r *Request) *Page {
 func ParseLink(inp string) string {
 	var prefixless, _ = strings.CutPrefix(inp, "=>")
 	var pureLink = strings.Trim(prefixless, " ")
-	if strings.Contains(prefixless, "	") {
-		pureLink = strings.Split(prefixless, "	")[0]
+	if strings.Contains(pureLink, "	") {
+		pureLink = strings.Split(pureLink, "	")[0]
 	}
 	if strings.Contains(pureLink, " ") {
-		pureLink = strings.Split(prefixless, " ")[0]
+		pureLink = strings.Split(pureLink, " ")[0]
 	}
 	var outp, _ = strings.CutSuffix(pureLink, "/")
 	switch outp {
@@ -64,6 +67,8 @@ func ParseLink(inp string) string {
 		return "../"
 	case "/" :
 		return "//"
+	default:
+		break
 	}
 	return outp
 }

@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	"golang.org/x/term"
 )
 
-const VersionName string = "0.3.5a"
+const VersionName string = "0.3.6a"
 const HomePageFile string = "file://../StaticPages/IndexPage"
 
 func main() {
@@ -101,9 +102,21 @@ func main() {
 			continue
 		}
 
+		// Going to a link by its index
+		if strings.HasPrefix(TrimmedCommand, ":") {
+			var LinkIndex, err = strconv.Atoi(strings.ReplaceAll(TrimmedCommand, ":", ""))
+			if err != nil || LinkIndex >= len(currentPage.Links) {
+				continue
+			}
+			TrimmedCommand = currentPage.Links[LinkIndex]
+		}
+
 		// Going to a page by full link
 		if strings.HasPrefix(TrimmedCommand, "gemini://") {
 			fmt.Print("Navigating to a specified page...")
+			if !strings.HasSuffix(TrimmedCommand, "/") {
+				TrimmedCommand = strings.Join([]string{TrimmedCommand ,"/"}, "")
+			}
 			currntIndex, history = DirectToANewPage(TrimmedCommand, history, currntIndex, currentPage)
 			continue
 		}

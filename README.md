@@ -11,6 +11,7 @@ Custom gemini CLI client for linux.
 - ```}``` and ```{``` to hop between the white spaces up and down
 - ```:q``` to quit. Ctrl-c also works but does not clear the screen
 - ```:r``` to reload the current page
+- ```:<number>``` to go to the link by it's index (is placed in the square brackets after every link)
 
 ## Collisions
 
