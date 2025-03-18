@@ -1,0 +1,50 @@
+# Welcome to WillSmith browser tutorial!
+
+This tutorial should give you the foundation of navigation and usage of this software
+
+# Main interface
+
+There are 3 main parts of the interface: status bar, page display and command line. The latter is used for interacting with the interface - all the motions are commands. 
+For example, ':r' will reload the page. The empty or invalid command will rerender the page.
+
+# Navigation
+
+Depending on the screen size you are using you might need to scroll up already. You can do it with '/' command.
+If you want to scroll down, use '\' command
+
+# Status bar
+
+The status bar is separated in different spaces. Let's go through all of them in order:
+- URI - the website you are reading now. The browser supports reading text files, which is indicated with file:// protocol
+- Position - this string contains the position of the view on the page. The formatting is as follows: <top line>-<bottom line>/<Total lines>
+- History - the depth of the history. If this value is greater than 0 you can go back.
+- Window size - the size of the screen in symbols. Format:<Width> x <Height>
+- Name of the software + version
+
+# Navigation
+
+There are 2 main intended means of navigations: by name and by index.
+If you want to go the page by its URI, you can type it and the browser will navigate you if:
+- The link is on the page
+- The link you provided is absolute
+## IMPORTANT NOTE
+For convinience the '/' symbol in the end of a link is NOT the part of the relative link. You should not include it in the link
+
+## Example
+=> RelLink.gmi  Try navigating to this page by typing RelLink.gmi
+=> file://../StaticPages/Tutor/AbsoluteLink.gmi Try navigating by full link by typing it's URI. Note that it includes the protocol in the beginning
+
+If you want to navigate by index, you can use the ':<index>' command, where the index is the number in the square brackets before the link
+## Example
+Try navigating to the previous pages by their indexes.
+
+# Misc
+
+- Exiting browser 
+To quit the browser, you can use ':q' command or just press <C-c> keys
+
+# Useless information
+To understand the controls beter I should share the ideal use scenario of the software. All notes bellow are aimed at the default full-sized QWERTY layout
+By design the right hand is lying at the right end of the keyboard. Thus, the index finger is on the '/' key, the millde finger is on the endet and the ring finger switches between '\' and backspace.
+By using this, the index finger is near the ':' and '.' keys and the pinky finger is used to press the shift key.
+The left hand is used for all the rest which is usually pressing number keys and using a left shift if the pinku finger is not easy to control

@@ -13,7 +13,7 @@ import (
 	"golang.org/x/term"
 )
 
-const VersionName string = "0.3.6a"
+const VersionName string = "0.3.7a"
 const HomePageFile string = "file://../StaticPages/IndexPage"
 
 func main() {
@@ -112,7 +112,7 @@ func main() {
 		}
 
 		// Going to a page by full link
-		if strings.HasPrefix(TrimmedCommand, "gemini://") {
+		if strings.HasPrefix(TrimmedCommand, "gemini://") || strings.HasPrefix(TrimmedCommand, "file://") {
 			fmt.Print("Navigating to a specified page...")
 			if !strings.HasSuffix(TrimmedCommand, "/") && !IsAnEndpoint(TrimmedCommand) {
 				TrimmedCommand = strings.Join([]string{TrimmedCommand ,"/"}, "")

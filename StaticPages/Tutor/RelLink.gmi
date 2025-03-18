@@ -1,0 +1,4 @@
+# Relative link example
+
+Congratulations! You've successfully made a transition to a new page!
+You can return by typing '..' command
