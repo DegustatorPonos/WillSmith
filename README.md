@@ -20,8 +20,7 @@ With that navigation scheme some links will colline with common functions. Here 
 - ```..``` -> ```../```
 
 # BUILDING
-- Specify the home page with HomePage variable in Src/Home.go (temporary solution)
-- run ```go run .``` in Src/
+Currently there is no installation option, but you can run it directly by running ```go run .``` in Src/ directory
 
 # TODO:
 ## Current major change in progress:
