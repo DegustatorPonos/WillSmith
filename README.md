@@ -24,6 +24,10 @@ With that navigation scheme some links will colline with common functions. Here 
 - run ```go run .``` in Src/
 
 # TODO:
+## Current major change in progress:
+- [ ] Async page loading
+
+## Before release tasks:
 - [x] Add a navigation between different pages
 - [x] Add scrolling support
 - [x] Index page
@@ -34,5 +38,4 @@ With that navigation scheme some links will colline with common functions. Here 
 - [ ] More commands to control flow
 
 ## Long-term plans:
-- [ ] Async page loading
 - [ ] Auto-translate some static text/html pages to text/hemeni
