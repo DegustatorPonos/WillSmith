@@ -1,9 +1,15 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"os"
 	"regexp"
 	"strings"
 )
+
+const CMD_CHAN_BUFF_SIZE int = 1
+const CMD_CHAN_ID int = 1
 
 // Returns the path that does not contain the top layer
 // Example: gemini://a/b/c/ -> gemini://a/b
@@ -57,3 +63,22 @@ func CompactAllBackwardsMotions(inp string) string {
 	return outp
 }
 
+func NavigationTask(output chan string, controlChannel *chan int) {
+	var reader = bufio.NewReader(os.Stdin)
+	for {
+		var command, readErr = reader.ReadString('\n')
+		if readErr != nil {
+			panic("Error in the command reading coroutine.")
+		}
+		command = strings.Trim(command, "\n")
+		fmt.Printf("Sending a command \"%v\"\n", command)
+		output <- command
+		*controlChannel <- CMD_CHAN_ID
+	}
+}
+
+func CreateCommandChannel(controlChannel *chan int) chan string {
+	var outpChannel = make(chan string, CMD_CHAN_BUFF_SIZE);
+	go NavigationTask(outpChannel, controlChannel)
+	return outpChannel
+}

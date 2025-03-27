@@ -16,11 +16,13 @@ import (
 )
 
 type Request struct {
+	URI string
 	ResultCode byte
 	Body []byte
 }
 
-const DEFAULT_PORT int = 1965
+const CON_CHAN_ID int = 2
+const CON_CHAN_BUF_LEN int = 1
 
 const ERR_HOST_NOT_FOUND string = "file://../StaticPages/Errors/NotFound"
 const ERR_BODY_READ string = "file://../StaticPages/Errors/BodyErr"
@@ -28,6 +30,8 @@ const ERR_TEMP_FALIURE string = "file://../StaticPages/Errors/TempFaliure"
 const ERR_PERMA_ERROR string = "file://../StaticPages/Errors/PermaError"
 const ERR_CLIENT_CERTS string = "file://../StaticPages/Errors/ClientCerts"
 const ERR_INPUT_EXPECTED string = "file://../StaticPages/Errors/InputExpected"
+
+const DEFAULT_PORT int = 1965
 
 var conf = &tls.Config{
 	InsecureSkipVerify: true,
@@ -71,7 +75,7 @@ func SendRequest(URI string, port int) *Request{
 		return ServeFile(ERR_BODY_READ)
 	} 
 
-	var outp = Request{ResultCode: RespCode, Body: body}
+	var outp = Request{URI: URI, ResultCode: RespCode, Body: body}
 	return &outp
 }
 
@@ -95,7 +99,7 @@ func ServeFile(link string) *Request {
 	if fopenerr != nil {
 		return &Request{ResultCode: 40}
 	}
-	var outp = Request{ResultCode: 20, Body: file}
+	var outp = Request{ResultCode: 20, Body: file, URI: link}
 	return &outp
 }
 
@@ -116,3 +120,51 @@ func GetErrorMessage(errorCode int) *Request {
 	return ServeFile(ERR_BODY_READ)
 }
 
+func ConnectionTask(RequestChan *chan string, ResponceChan *chan *Request, TerminationChan *chan bool, controlChannel *chan int) {
+	defer close(*ResponceChan)
+	var PendingRequests = make([]string, 0)
+	var PendngRequestsChan = make(chan *Request, CON_CHAN_BUF_LEN)
+	for {
+		select {
+		case req := <-*RequestChan:
+			fmt.Println("Recieved a new request")
+			PendingRequests = append(PendingRequests, req)
+			go GetPageTask(req, &PendngRequestsChan)
+			// Request here
+			continue
+
+		case <-*TerminationChan:
+			// Clearing all pending requests
+			PendingRequests = make([]string, 0)
+			continue
+
+		case resp := <- PendngRequestsChan:
+			for i, val := range PendingRequests {
+				fmt.Printf("Comparing `%v` against `%v`\n", val, resp.URI)
+				if(val == resp.URI) {
+					fmt.Println("Recieved a new responce")
+					if i != len(PendingRequests) - 1 {
+						PendingRequests = append(PendingRequests[:i], PendingRequests[i+1:]...)
+					} else {
+						PendingRequests = PendingRequests[:i]
+					}
+					*ResponceChan <- resp
+					*controlChannel <- CON_CHAN_ID
+				}
+			}
+			continue
+
+		}
+	}
+}
+
+func GetPageTask(URI string, ResponceChan *chan *Request) {
+	var resp = SendRequest(URI, DEFAULT_PORT)
+	*ResponceChan <- resp
+}
+
+func CreateConnectionTask(RequestChan *chan string, TerminationChan *chan bool, controlChannel *chan int) *chan *Request {
+	var outpChannel = make(chan *Request, CON_CHAN_BUF_LEN)
+	go ConnectionTask(RequestChan, &outpChannel, TerminationChan, controlChannel)
+	return &outpChannel
+}

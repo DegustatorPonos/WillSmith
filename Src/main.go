@@ -5,16 +5,19 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
+	"os"
 
 	"golang.org/x/term"
 )
 
 const VersionName string = "0.3.7a"
 const HomePageFile string = "file://../StaticPages/IndexPage"
+
+const CTRL_CH_LEN int = 2
+const REQ_CH_LEN int = 2
 
 func main() {
 	var history = make([]string, 1)
@@ -26,6 +29,32 @@ func main() {
 	var resp = SendRequest(history[currntIndex], DEFAULT_PORT)
 	var currentPage = ReadRequest(resp)
 	var width, height, _ = term.GetSize(0)
+
+	// CHANNELING
+	var ControlChan = make(chan int, CTRL_CH_LEN)
+	var RequestChan = make(chan string, REQ_CH_LEN)
+	var TerminationChan = make(chan bool, REQ_CH_LEN)
+	
+	// STARTING COROUTINES
+	var CommandsChannel = CreateCommandChannel(&ControlChan)
+	var ResponceChannel = CreateConnectionTask(&RequestChan, &TerminationChan, &ControlChan)
+
+	for {
+		CommandType := <- ControlChan
+		fmt.Printf("Command type: %v\n", CommandType)
+		switch CommandType{
+		case CMD_CHAN_ID:
+			fmt.Println("Starting reading the command")
+			var command = <- CommandsChannel
+			fmt.Println(command)
+			RequestChan <- HomePageFile
+			continue
+		case CON_CHAN_ID:
+			var responce = <- *ResponceChannel
+			fmt.Printf("Got the page \"%v\"\n", responce.URI)
+			continue
+		}
+	}
 
 	for {
 		if PrevCurrentIndex != currntIndex {
@@ -131,6 +160,7 @@ func main() {
 
 	}
 }
+
 // Returns new index and history
 func DirectToANewPage(NewPageURI string, history []string, currntIndex int, currentPage *Page) (int, []string) {
 	if len(history) <= currntIndex + 1 {
@@ -143,3 +173,4 @@ func DirectToANewPage(NewPageURI string, history []string, currntIndex int, curr
 	currentPage = ReadRequest(resp)
 	return currntIndex, history
 }
+
