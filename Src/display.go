@@ -13,6 +13,7 @@ import (
 )
 
 type Page struct {
+	URI string
 	Text []string
 	Links []string
 	L1Headers []string
@@ -20,7 +21,7 @@ type Page struct {
 }
 
 func ReadRequest(r *Request) *Page {
-	var outp = Page{}
+	var outp = Page{URI: r.URI}
 	outp.Text = make([]string, 0)
 	outp.Links = make([]string, 0)
 	var width, _, _ = term.GetSize(0)
@@ -85,31 +86,32 @@ func DisplayPage(page *Page) {
 	}
 }
 
-func GetStatusBar(ScreenWidth int, ScreenHeight int, URI string, HistoryLength int, ScrollOffset int, PageLength int) string {
+func GetStatusBar(currentTab *Tab, currentPage *Page) string {
+	var ScrollOffset = currentTab.currentPosition
 	var sb = strings.Builder{}
-	sb.WriteString(URI)
+	sb.WriteString(currentPage.URI)
 	sb.WriteString(" | ")
 	// Page position
 	sb.WriteString("Position: ")
 	sb.WriteString(strconv.Itoa(ScrollOffset))
 	sb.WriteString("-")
-	sb.WriteString(strconv.Itoa(ScrollOffset - 5 + ScreenHeight))
+	sb.WriteString(strconv.Itoa(ScrollOffset - 5 + currentTab.screenInfo.Height))
 	sb.WriteString("/")
-	sb.WriteString(strconv.Itoa(PageLength))
+	sb.WriteString(strconv.Itoa(len(currentPage.Text)))
 	sb.WriteString(" | ")
 	sb.WriteString("History: ")
-	sb.WriteString(strconv.Itoa(HistoryLength))
+	sb.WriteString(strconv.Itoa(currentTab.historyLength))
 	sb.WriteString(" | ")
 	sb.WriteString("Window size: ")
-	sb.WriteString(strconv.Itoa(ScreenWidth))
+	sb.WriteString(strconv.Itoa(currentTab.screenInfo.Width))
 	sb.WriteString(" x ")
-	sb.WriteString(strconv.Itoa(ScreenHeight))
+	sb.WriteString(strconv.Itoa(currentTab.screenInfo.Height))
 	sb.WriteString(" | ")
 	sb.WriteString("WillSmith v.")
 	sb.WriteString(VersionName)
 	sb.WriteString(" | ")
-	if(sb.Len() >= ScreenWidth) {
-		return sb.String()[0:ScreenWidth-1]
+	if(sb.Len() >= currentTab.screenInfo.Width) {
+		return sb.String()[0:currentTab.screenInfo.Width-1]
 	}
 	return sb.String()
 }

@@ -19,16 +19,42 @@ const HomePageFile string = "file://../StaticPages/IndexPage"
 const CTRL_CH_LEN int = 2
 const REQ_CH_LEN int = 2
 
+type Tab struct {
+	history []string
+	historyLength int
+	screenInfo ScreenInfo
+	currentPosition int
+}
+
+func (tab *Tab) AddPage(newPage string) {
+	if(len(tab.history) >= tab.historyLength) {
+		tab.history = append(tab.history, newPage)
+		tab.historyLength += 1
+		return
+	}
+	tab.history[tab.historyLength] = newPage
+	tab.historyLength += 1
+
+}
+
 func main() {
+
+	// TODO: Delete
 	var history = make([]string, 1)
 	history[0] = HomePageFile
 	var currntIndex = 0
 	var PrevCurrentIndex = 0
 	var reader = bufio.NewReader(os.Stdin)
-
-	var resp = SendRequest(history[currntIndex], DEFAULT_PORT)
-	var currentPage = ReadRequest(resp)
+	//	var resp = SendRequest(history[currntIndex], DEFAULT_PORT)
 	var width, height, _ = term.GetSize(0)
+	// END OF TODO
+
+	var CurrentTab = Tab{
+		history: make([]string, 0),
+		historyLength: 0,
+	}
+	var currentPage = Page{}
+	// Initial size
 
 	// CHANNELING
 	var ControlChan = make(chan int, CTRL_CH_LEN)
@@ -38,7 +64,10 @@ func main() {
 	// STARTING COROUTINES
 	var CommandsChannel = CreateCommandChannel(&ControlChan)
 	var ResponceChannel = CreateConnectionTask(&RequestChan, &TerminationChan, &ControlChan)
+	var ScreenInfoChannel = GetScreenChannel(&ControlChan)
 
+	RequestChan <- HomePageFile
+	// Handling events
 	for {
 		CommandType := <- ControlChan
 		fmt.Printf("Command type: %v\n", CommandType)
@@ -47,34 +76,36 @@ func main() {
 			fmt.Println("Starting reading the command")
 			var command = <- CommandsChannel
 			fmt.Println(command)
-			RequestChan <- HomePageFile
 			continue
 		case CON_CHAN_ID:
 			var responce = <- *ResponceChannel
-			fmt.Printf("Got the page \"%v\"\n", responce.URI)
+			CurrentTab.AddPage(responce.URI)
+			currentPage = *ReadRequest(responce)
+			RenderPage(&currentPage, &CurrentTab)
+			continue
+		case SCR_CHN_ID:
+			var NewSize = <- ScreenInfoChannel
+			CurrentTab.screenInfo = NewSize
+			RenderPage(&currentPage, &CurrentTab)
 			continue
 		}
 	}
 
 	for {
 		if PrevCurrentIndex != currntIndex {
-			resp = SendRequest(history[currntIndex], DEFAULT_PORT)
-			currentPage = ReadRequest(resp)
+//			resp = SendRequest(history[currntIndex], DEFAULT_PORT)
 			PrevCurrentIndex = currntIndex
 		}
 		var newwidth, newheight, _ = term.GetSize(0)
 		if(newheight != height || newwidth != width) {
 			// Resizing
-			currentPage = ReadRequest(resp)
 			height = newheight
 			width = newwidth
 		}
 
 		// Rendering the screen and reading the command
 		ClearConsole()
-		fmt.Println(GetStatusBar(width, height, history[currntIndex], currntIndex, int(currentPage.ScrollOffser), len(currentPage.Text)))
 		WriteLine(width)
-		DisplayPage(currentPage)
 		WriteLine(width)
 		fmt.Print("Enter command: >")
 		var command, _ = reader.ReadString('\n')
@@ -126,8 +157,7 @@ func main() {
 			ClearConsole()
 			return
 		case ":r": // Reload the current page
-			resp = SendRequest(history[currntIndex], DEFAULT_PORT)
-			currentPage = ReadRequest(resp)
+//			resp = SendRequest(history[currntIndex], DEFAULT_PORT)
 			continue
 		}
 
@@ -146,19 +176,28 @@ func main() {
 			if !strings.HasSuffix(TrimmedCommand, "/") && !IsAnEndpoint(TrimmedCommand) {
 				TrimmedCommand = strings.Join([]string{TrimmedCommand ,"/"}, "")
 			}
-			currntIndex, history = DirectToANewPage(TrimmedCommand, history, currntIndex, currentPage)
+//			currntIndex, history = DirectToANewPage(TrimmedCommand, history, currntIndex, currentPage)
 			continue
 		}
 
 		// Going to a page by relative link
 		if slices.Contains(currentPage.Links, TrimmedCommand) {
 			fmt.Print("Navigating to a next page...")
-			var newURI = AppendToLink(history[currntIndex], TrimmedCommand)
-			currntIndex, history = DirectToANewPage(newURI, history, currntIndex, currentPage)
+//			var newURI = AppendToLink(history[currntIndex], TrimmedCommand)
+//			currntIndex, history = DirectToANewPage(newURI, history, currntIndex, currentPage)
 			continue
 		}
 
 	}
+}
+
+func RenderPage(newPage *Page, currentTab *Tab) {
+	ClearConsole()
+	fmt.Println(GetStatusBar(currentTab, newPage))
+	WriteLine(currentTab.screenInfo.Width)
+	DisplayPage(newPage)
+	WriteLine(currentTab.screenInfo.Width)
+	fmt.Print("Enter command: >")
 }
 
 // Returns new index and history
