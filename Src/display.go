@@ -86,10 +86,10 @@ func DisplayPage(page *Page) {
 	}
 }
 
-func GetStatusBar(currentTab *Tab, currentPage *Page) string {
+func GetStatusBar(currentTab *Tab) string {
 	var ScrollOffset = currentTab.currentPosition
 	var sb = strings.Builder{}
-	sb.WriteString(currentPage.URI)
+	sb.WriteString(currentTab.currentPage.URI)
 	sb.WriteString(" | ")
 	// Page position
 	sb.WriteString("Position: ")
@@ -97,7 +97,7 @@ func GetStatusBar(currentTab *Tab, currentPage *Page) string {
 	sb.WriteString("-")
 	sb.WriteString(strconv.Itoa(ScrollOffset - 5 + currentTab.screenInfo.Height))
 	sb.WriteString("/")
-	sb.WriteString(strconv.Itoa(len(currentPage.Text)))
+	sb.WriteString(strconv.Itoa(len(currentTab.currentPage.Text)))
 	sb.WriteString(" | ")
 	sb.WriteString("History: ")
 	sb.WriteString(strconv.Itoa(currentTab.historyLength))
