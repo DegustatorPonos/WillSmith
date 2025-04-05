@@ -3,17 +3,13 @@ package main
 // The main app flow
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
-
-	"golang.org/x/term"
 )
 
-const VersionName string = "0.3.7a"
+const VersionName string = "0.4a"
 const HomePageFile string = "file://../StaticPages/IndexPage"
 
 const CTRL_CH_LEN int = 2
@@ -25,31 +21,32 @@ type Tab struct {
 	currentPage Page
 	screenInfo ScreenInfo
 	currentPosition int
+	PendingRequests int
 }
 
 func (tab *Tab) AddPage(newPage string) {
-	if(len(tab.history) >= tab.historyLength) {
+	if tab.historyLength > 0 && tab.history[tab.historyLength - 1] == newPage {
+		return
+	}
+	if(len(tab.history) <= tab.historyLength) {
 		tab.history = append(tab.history, newPage)
 		tab.historyLength += 1
 		return
 	}
 	tab.history[tab.historyLength] = newPage
 	tab.historyLength += 1
+}
 
+func (tab *Tab) PopPage(requestChannel chan string) {
+	if tab.historyLength > 1 {
+		tab.historyLength -= 2
+	} else {
+		tab.historyLength -= 1
+	}
+	requestChannel <- tab.history[tab.historyLength]
 }
 
 func main() {
-
-	// TODO: Delete
-	var history = make([]string, 1)
-	history[0] = HomePageFile
-	var currntIndex = 0
-	var PrevCurrentIndex = 0
-	var reader = bufio.NewReader(os.Stdin)
-	//	var resp = SendRequest(history[currntIndex], DEFAULT_PORT)
-	var width, height, _ = term.GetSize(0)
-	// END OF TODO
-
 	var CurrentTab = Tab{
 		history: make([]string, 0),
 		historyLength: 0,
@@ -71,10 +68,13 @@ func main() {
 	// Handling events
 	for {
 		CommandType := <- ControlChan
-		fmt.Printf("Command type: %v\n", CommandType)
 		switch CommandType{
 		case CON_CHAN_ID:
 			var responce = <- *ResponceChannel
+			CurrentTab.PendingRequests -= 1
+			if CurrentTab.PendingRequests < 0 {
+				CurrentTab.PendingRequests = 0
+			}
 			CurrentTab.AddPage(responce.URI)
 			CurrentTab.currentPage = *ReadRequest(responce)
 			RenderPage(&CurrentTab)
@@ -94,91 +94,28 @@ func main() {
 			continue 
 		}
 	}
-
-	for {
-		if PrevCurrentIndex != currntIndex {
-//			resp = SendRequest(history[currntIndex], DEFAULT_PORT)
-			PrevCurrentIndex = currntIndex
-		}
-		var newwidth, newheight, _ = term.GetSize(0)
-		if(newheight != height || newwidth != width) {
-			// Resizing
-			height = newheight
-			width = newwidth
-		}
-
-		// Rendering the screen and reading the command
-		ClearConsole()
-		WriteLine(width)
-		WriteLine(width)
-		fmt.Print("Enter command: >")
-		var command, _ = reader.ReadString('\n')
-		var TrimmedCommand = strings.TrimRight(command, "\n")
-		TrimmedCommand = strings.Trim(TrimmedCommand, " ")
-
-		// Handling commands
-		switch(TrimmedCommand) {
-		case "..": // Go to previous page
-			if(currntIndex >= 1) {
-				currntIndex -= 1
-			}
-			continue
-//		case "/": // Scroll up by half a page
-//			currentPage.ScrollOffser += uint(height / 2)
-//			continue
-//		case "\\": // Scroll up by half a page
-//			if(currentPage.ScrollOffser > uint(height / 2)) {
-//				currentPage.ScrollOffser -= uint(height / 2)
-//			} else {
-//				currentPage.ScrollOffser = 0
-//			}
-//			continue
-//		case "}": // Go until the next white space
-//			if(int(currentPage.ScrollOffser) >= len(currentPage.Text)) {
-//				currentPage.ScrollOffser = uint(len(currentPage.Text) - 1)
-//			}
-//			currentPage.ScrollOffser += 1;
-//			for(int(currentPage.ScrollOffser) < len(currentPage.Text) && currentPage.Text[currentPage.ScrollOffser] != "") {
-//				currentPage.ScrollOffser += 1;
-//			}
-//			currentPage.ScrollOffser += 1;
-//			continue
-//		case "{": // Go until the pervious white space
-//			if(currentPage.ScrollOffser < 2) {
-//				continue
-//			}
-//			if(int(currentPage.ScrollOffser) >= len(currentPage.Text)) {
-//				currentPage.ScrollOffser = uint(len(currentPage.Text) - 1)
-//			}
-//			currentPage.ScrollOffser -= 2;
-//			for(int(currentPage.ScrollOffser) > 0 && currentPage.Text[currentPage.ScrollOffser] != "") {
-//				currentPage.ScrollOffser -= 1;
-//			}
-//			continue
-case ":r": // Reload the current page
-//			resp = SendRequest(history[currntIndex], DEFAULT_PORT)
-continue
-		}
-
-		// Going to a page by full link
-		if strings.HasPrefix(TrimmedCommand, "gemini://") || strings.HasPrefix(TrimmedCommand, "file://") {
-		fmt.Print("Navigating to a specified page...")
-		if !strings.HasSuffix(TrimmedCommand, "/") && !IsAnEndpoint(TrimmedCommand) {
-			TrimmedCommand = strings.Join([]string{TrimmedCommand ,"/"}, "")
-		}
-		//			currntIndex, history = DirectToANewPage(TrimmedCommand, history, currntIndex, currentPage)
-		continue
-	}
-
-	// Going to a page by relative link
-	//		if slices.Contains(currentPage.Links, TrimmedCommand) {
-	//			fmt.Print("Navigating to a next page...")
-	//			var newURI = AppendToLink(history[currntIndex], TrimmedCommand)
-	//			currntIndex, history = DirectToANewPage(newURI, history, currntIndex, currentPage)
+	//		case "}": // Go until the next white space
+	//			if(int(currentPage.ScrollOffser) >= len(currentPage.Text)) {
+	//				currentPage.ScrollOffser = uint(len(currentPage.Text) - 1)
+	//			}
+	//			currentPage.ScrollOffser += 1;
+	//			for(int(currentPage.ScrollOffser) < len(currentPage.Text) && currentPage.Text[currentPage.ScrollOffser] != "") {
+	//				currentPage.ScrollOffser += 1;
+	//			}
+	//			currentPage.ScrollOffser += 1;
 	//			continue
-	//		}
-
-}
+	//		case "{": // Go until the pervious white space
+	//			if(currentPage.ScrollOffser < 2) {
+	//				continue
+	//			}
+	//			if(int(currentPage.ScrollOffser) >= len(currentPage.Text)) {
+	//				currentPage.ScrollOffser = uint(len(currentPage.Text) - 1)
+	//			}
+	//			currentPage.ScrollOffser -= 2;
+	//			for(int(currentPage.ScrollOffser) > 0 && currentPage.Text[currentPage.ScrollOffser] != "") {
+	//				currentPage.ScrollOffser -= 1;
+	//			}
+	//			continue
 }
 
 func RenderPage(currentTab *Tab) {
@@ -201,6 +138,13 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 		case "/": // Scroll up by half a page
 			currentTab.currentPosition += currentTab.screenInfo.Height / 2
 			return true
+		case ":r": // Scroll up by half a page
+			requestChan <- currentTab.history[currentTab.historyLength - 1]
+			return true
+		case ":u": // Scroll up by half a page
+			TerminationChan <- true
+			currentTab.PendingRequests = 0
+			return true
 		case "\\": // Scroll down by half a page
 			currentTab.currentPosition -= currentTab.screenInfo.Height / 2
 			if currentTab.currentPosition < 0 {
@@ -208,11 +152,7 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 			}
 			return true
 		case "..":
-			if currentTab.historyLength <= 1 {
-				return true
-			}
-			currentTab.historyLength -= 1
-			requestChan <- currentTab.history[currentTab.historyLength - 1]
+			currentTab.PopPage(requestChan)
 			return true
 	}
 
@@ -232,6 +172,7 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 			command = strings.Join([]string{command,"/"}, "")
 		}
 		requestChan <- command
+		currentTab.PendingRequests += 1
 		return true
 	}
 
@@ -240,6 +181,7 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 		fmt.Print("Navigating to a next page...")
 		var newURI = AppendToLink(currentTab.currentPage.URI, command)
 		requestChan <- newURI 
+		currentTab.PendingRequests += 1
 		return true
 	}
 

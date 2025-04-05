@@ -127,10 +127,9 @@ func ConnectionTask(RequestChan *chan string, ResponceChan *chan *Request, Termi
 	for {
 		select {
 		case req := <-*RequestChan:
-			fmt.Println("Recieved a new request")
 			PendingRequests = append(PendingRequests, req)
 			go GetPageTask(req, &PendngRequestsChan)
-			// Request here
+			// Sending a request here
 			continue
 
 		case <-*TerminationChan:
@@ -139,10 +138,13 @@ func ConnectionTask(RequestChan *chan string, ResponceChan *chan *Request, Termi
 			continue
 
 		case resp := <- PendngRequestsChan:
+			// Checking if the page we recived was requested or we got an error page
+			if len(PendingRequests) == 0 && strings.HasPrefix(resp.URI, "file://../StaticPages/Errors/") {
+				*ResponceChan <- resp
+				*controlChannel <- CON_CHAN_ID
+			}
 			for i, val := range PendingRequests {
-				fmt.Printf("Comparing `%v` against `%v`\n", val, resp.URI)
 				if(val == resp.URI) {
-					fmt.Println("Recieved a new responce")
 					if i != len(PendingRequests) - 1 {
 						PendingRequests = append(PendingRequests[:i], PendingRequests[i+1:]...)
 					} else {
@@ -158,6 +160,7 @@ func ConnectionTask(RequestChan *chan string, ResponceChan *chan *Request, Termi
 	}
 }
 
+// A coroutine summoned by the ConnectionTask
 func GetPageTask(URI string, ResponceChan *chan *Request) {
 	var resp = SendRequest(URI, DEFAULT_PORT)
 	*ResponceChan <- resp

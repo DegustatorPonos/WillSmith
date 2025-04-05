@@ -92,24 +92,15 @@ func GetStatusBar(currentTab *Tab) string {
 	sb.WriteString(currentTab.currentPage.URI)
 	sb.WriteString(" | ")
 	// Page position
-	sb.WriteString("Position: ")
-	sb.WriteString(strconv.Itoa(ScrollOffset))
-	sb.WriteString("-")
-	sb.WriteString(strconv.Itoa(ScrollOffset - 5 + currentTab.screenInfo.Height))
-	sb.WriteString("/")
-	sb.WriteString(strconv.Itoa(len(currentTab.currentPage.Text)))
-	sb.WriteString(" | ")
-	sb.WriteString("History: ")
-	sb.WriteString(strconv.Itoa(currentTab.historyLength))
-	sb.WriteString(" | ")
-	sb.WriteString("Window size: ")
-	sb.WriteString(strconv.Itoa(currentTab.screenInfo.Width))
-	sb.WriteString(" x ")
-	sb.WriteString(strconv.Itoa(currentTab.screenInfo.Height))
-	sb.WriteString(" | ")
+	sb.WriteString(fmt.Sprintf("Position: %v-%v/%v | ", ScrollOffset, ScrollOffset - 5 + currentTab.screenInfo.Height, len(currentTab.currentPage.Text)))
+	sb.WriteString(fmt.Sprintf("History: %v | ", currentTab.historyLength))
+	sb.WriteString(fmt.Sprintf("Window size: %v x %v | ", currentTab.screenInfo.Width, currentTab.screenInfo.Height))
 	sb.WriteString("WillSmith v.")
 	sb.WriteString(VersionName)
 	sb.WriteString(" | ")
+	if currentTab.PendingRequests > 0 {
+		sb.WriteString(fmt.Sprintf("Pending requests: %v", currentTab.PendingRequests))
+	}
 	if(sb.Len() >= currentTab.screenInfo.Width) {
 		return sb.String()[0:currentTab.screenInfo.Width-1]
 	}
