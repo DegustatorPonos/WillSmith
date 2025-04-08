@@ -18,6 +18,7 @@ const REQ_CH_LEN int = 2
 type Tab struct {
 	history []string
 	historyLength int
+	currentResp Request
 	currentPage Page
 	screenInfo ScreenInfo
 	currentPosition int
@@ -76,14 +77,15 @@ func main() {
 				CurrentTab.PendingRequests = 0
 			}
 			CurrentTab.AddPage(responce.URI)
-			CurrentTab.currentPage = *ReadRequest(responce)
+			CurrentTab.currentResp = *responce
+			CurrentTab.currentPage = *ParseRequest(responce, CurrentTab.screenInfo)
 			RenderPage(&CurrentTab)
 			continue
 		case SCR_CHN_ID:
 			var NewSize = <- ScreenInfoChannel
 			CurrentTab.screenInfo = NewSize
+			CurrentTab.currentPage = *ParseRequest(&CurrentTab.currentResp, CurrentTab.screenInfo)
 			RenderPage(&CurrentTab)
-			continue
 		case CMD_CHAN_ID:
 			var command = <- CommandsChannel
 			if !(HandleCommand(command, &CurrentTab, RequestChan, TerminationChan)) {
@@ -187,17 +189,3 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 
 	return true
 }
-
-// Returns new index and history
-func DirectToANewPage(NewPageURI string, history []string, currntIndex int, currentPage *Page) (int, []string) {
-	if len(history) <= currntIndex + 1 {
-		history = append(history, NewPageURI)
-	} else {
-		history[currntIndex + 1] = NewPageURI
-	}
-	currntIndex += 1
-	var resp = SendRequest(history[currntIndex], DEFAULT_PORT)
-	currentPage = ReadRequest(resp)
-	return currntIndex, history
-}
-

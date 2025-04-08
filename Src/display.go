@@ -20,11 +20,11 @@ type Page struct {
 	ScrollOffser uint
 }
 
-func ReadRequest(r *Request) *Page {
+func ParseRequest(r *Request, Screen ScreenInfo) *Page {
 	var outp = Page{URI: r.URI}
 	outp.Text = make([]string, 0)
 	outp.Links = make([]string, 0)
-	var width, _, _ = term.GetSize(0)
+	var width = Screen.Width
 	for _, rawStr := range strings.Split(string(r.Body), "\n") {
 		var line = rawStr
 		if strings.HasPrefix(rawStr, "=>") {
