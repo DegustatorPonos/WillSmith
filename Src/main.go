@@ -70,6 +70,7 @@ func main() {
 	for {
 		CommandType := <- ControlChan
 		switch CommandType{
+
 		case CON_CHAN_ID:
 			var responce = <- *ResponceChannel
 			CurrentTab.PendingRequests -= 1
@@ -79,13 +80,16 @@ func main() {
 			CurrentTab.AddPage(responce.URI)
 			CurrentTab.currentResp = *responce
 			CurrentTab.currentPage = *ParseRequest(responce, CurrentTab.screenInfo)
+			CurrentTab.currentPosition = 0
 			RenderPage(&CurrentTab)
 			continue
+
 		case SCR_CHN_ID:
 			var NewSize = <- ScreenInfoChannel
 			CurrentTab.screenInfo = NewSize
 			CurrentTab.currentPage = *ParseRequest(&CurrentTab.currentResp, CurrentTab.screenInfo)
 			RenderPage(&CurrentTab)
+
 		case CMD_CHAN_ID:
 			var command = <- CommandsChannel
 			if !(HandleCommand(command, &CurrentTab, RequestChan, TerminationChan)) {
@@ -94,30 +98,9 @@ func main() {
 			}
 			RenderPage(&CurrentTab)
 			continue 
+
 		}
 	}
-	//		case "}": // Go until the next white space
-	//			if(int(currentPage.ScrollOffser) >= len(currentPage.Text)) {
-	//				currentPage.ScrollOffser = uint(len(currentPage.Text) - 1)
-	//			}
-	//			currentPage.ScrollOffser += 1;
-	//			for(int(currentPage.ScrollOffser) < len(currentPage.Text) && currentPage.Text[currentPage.ScrollOffser] != "") {
-	//				currentPage.ScrollOffser += 1;
-	//			}
-	//			currentPage.ScrollOffser += 1;
-	//			continue
-	//		case "{": // Go until the pervious white space
-	//			if(currentPage.ScrollOffser < 2) {
-	//				continue
-	//			}
-	//			if(int(currentPage.ScrollOffser) >= len(currentPage.Text)) {
-	//				currentPage.ScrollOffser = uint(len(currentPage.Text) - 1)
-	//			}
-	//			currentPage.ScrollOffser -= 2;
-	//			for(int(currentPage.ScrollOffser) > 0 && currentPage.Text[currentPage.ScrollOffser] != "") {
-	//				currentPage.ScrollOffser -= 1;
-	//			}
-	//			continue
 }
 
 func RenderPage(currentTab *Tab) {
@@ -137,15 +120,20 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 			return true
 		case ":q": // Quitting the app
 			return false
-		case "/": // Scroll up by half a page
-			currentTab.currentPosition += currentTab.screenInfo.Height / 2
+		case "..": // Going to the previous page
+			currentTab.PopPage(requestChan)
 			return true
-		case ":r": // Scroll up by half a page
+		case ":r": // Reload current page
 			requestChan <- currentTab.history[currentTab.historyLength - 1]
 			return true
-		case ":u": // Scroll up by half a page
+		case ":u": // Abort all current responces
 			TerminationChan <- true
 			currentTab.PendingRequests = 0
+			return true
+
+		// Movement
+		case "/": // Scroll up by half a page
+			currentTab.currentPosition += currentTab.screenInfo.Height / 2
 			return true
 		case "\\": // Scroll down by half a page
 			currentTab.currentPosition -= currentTab.screenInfo.Height / 2
@@ -153,8 +141,11 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 				currentTab.currentPosition = 0
 			}
 			return true
-		case "..":
-			currentTab.PopPage(requestChan)
+		case "}": // Scroll down until the closest space
+			currentTab.ScrollDownUntilTheClosestSpace()
+			return true
+		case "{": // Scroll up until the closest space
+			currentTab.ScrollUpUntilTheClosestSpace()
 			return true
 	}
 
@@ -188,4 +179,36 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 	}
 
 	return true
+}
+
+func (tab *Tab) ScrollDownUntilTheClosestSpace() {
+	if tab.currentPosition >= len(tab.currentPage.Text) {
+		tab.currentPosition = len(tab.currentPage.Text) - 1
+	}
+	var MaxPosition = len(tab.currentPage.Text)
+	for {
+		tab.currentPosition += 1
+		if len(strings.Trim(tab.currentPage.Text[tab.currentPosition], " ")) < 2 || tab.currentPosition == MaxPosition {
+			tab.currentPosition += 1
+			return
+		}
+	}
+}
+
+func (tab *Tab) ScrollUpUntilTheClosestSpace() {
+	if tab.currentPosition >= len(tab.currentPage.Text) {
+		tab.currentPosition = len(tab.currentPage.Text) - 1
+	}
+	tab.currentPosition -= 1 // Compenstaing to additional +1 on every return
+	for {
+		tab.currentPosition -= 1
+		if tab.currentPosition < 0 {
+			tab.currentPosition = 0
+			return
+		}
+		if len(strings.Trim(tab.currentPage.Text[tab.currentPosition], " ")) < 2 {
+			tab.currentPosition += 1
+			return
+		}
+	}
 }

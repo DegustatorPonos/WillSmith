@@ -9,6 +9,7 @@ Custom gemini CLI client for linux.
 - ```/``` scrolls the page 1/2 of the screen up
 - ```\``` scrolls the page 1/2 of the screen down (or the first line) 
 - ```}``` and ```{``` to hop between the white spaces up and down
+- ```]``` and ```[``` to hop between headers up and down
 - ```:q``` to quit. Ctrl-c also works but does not clear the screen
 - ```:r``` to reload the current page
 - ```:<number>``` to go to the link by it's index (is placed in the square brackets after every link)
