@@ -120,3 +120,13 @@ func WriteLine(Width int) {
 	}
 	fmt.Println()
 }
+
+func RenderPage(currentTab *Tab) {
+	ClearConsole()
+	fmt.Println(GetStatusBar(currentTab))
+	WriteLine(currentTab.screenInfo.Width)
+	currentTab.currentPage.ScrollOffser = uint(currentTab.currentPosition)
+	DisplayPage(&currentTab.currentPage)
+	WriteLine(currentTab.screenInfo.Width)
+	fmt.Print("Enter command: >")
+}

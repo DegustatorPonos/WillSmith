@@ -2,13 +2,6 @@ package main
 
 // The main app flow
 
-import (
-	"fmt"
-	"slices"
-	"strconv"
-	"strings"
-)
-
 const VersionName string = "0.4a"
 const HomePageFile string = "file://../StaticPages/IndexPage"
 
@@ -99,116 +92,6 @@ func main() {
 			RenderPage(&CurrentTab)
 			continue 
 
-		}
-	}
-}
-
-func RenderPage(currentTab *Tab) {
-	ClearConsole()
-	fmt.Println(GetStatusBar(currentTab))
-	WriteLine(currentTab.screenInfo.Width)
-	currentTab.currentPage.ScrollOffser = uint(currentTab.currentPosition)
-	DisplayPage(&currentTab.currentPage)
-	WriteLine(currentTab.screenInfo.Width)
-	fmt.Print("Enter command: >")
-}
-
-// Returns true if the app should still run
-func HandleCommand(command string, currentTab *Tab, requestChan chan string, TerminationChan chan bool) (bool) {
-	switch command {
-		case "": // Rerendering the page
-			return true
-		case ":q": // Quitting the app
-			return false
-		case "..": // Going to the previous page
-			currentTab.PopPage(requestChan)
-			return true
-		case ":r": // Reload current page
-			requestChan <- currentTab.history[currentTab.historyLength - 1]
-			return true
-		case ":u": // Abort all current responces
-			TerminationChan <- true
-			currentTab.PendingRequests = 0
-			return true
-
-		// Movement
-		case "/": // Scroll up by half a page
-			currentTab.currentPosition += currentTab.screenInfo.Height / 2
-			return true
-		case "\\": // Scroll down by half a page
-			currentTab.currentPosition -= currentTab.screenInfo.Height / 2
-			if currentTab.currentPosition < 0 {
-				currentTab.currentPosition = 0
-			}
-			return true
-		case "}": // Scroll down until the closest space
-			currentTab.ScrollDownUntilTheClosestSpace()
-			return true
-		case "{": // Scroll up until the closest space
-			currentTab.ScrollUpUntilTheClosestSpace()
-			return true
-	}
-
-	// Going to a link by its index
-	if strings.HasPrefix(command, ":") {
-		var LinkIndex, err = strconv.Atoi(strings.ReplaceAll(command, ":", ""))
-		if err != nil || LinkIndex >= len(currentTab.currentPage.Links) {
-			return true
-		}
-		command = currentTab.currentPage.Links[LinkIndex]
-	}
-
-	// Going to a page by full link
-	if strings.HasPrefix(command, "gemini://") || strings.HasPrefix(command, "file://") {
-		fmt.Print("Navigating to a specified page...")
-		if !strings.HasSuffix(command, "/") && !IsAnEndpoint(command) {
-			command = strings.Join([]string{command,"/"}, "")
-		}
-		requestChan <- command
-		currentTab.PendingRequests += 1
-		return true
-	}
-
-	// Going to a page by relative link
-	if slices.Contains(currentTab.currentPage.Links, command) {
-		fmt.Print("Navigating to a next page...")
-		var newURI = AppendToLink(currentTab.currentPage.URI, command)
-		requestChan <- newURI 
-		currentTab.PendingRequests += 1
-		return true
-	}
-
-	return true
-}
-
-func (tab *Tab) ScrollDownUntilTheClosestSpace() {
-	if tab.currentPosition >= len(tab.currentPage.Text) {
-		tab.currentPosition = len(tab.currentPage.Text) - 1
-	}
-	var MaxPosition = len(tab.currentPage.Text)
-	for {
-		tab.currentPosition += 1
-		if len(strings.Trim(tab.currentPage.Text[tab.currentPosition], " ")) < 2 || tab.currentPosition == MaxPosition {
-			tab.currentPosition += 1
-			return
-		}
-	}
-}
-
-func (tab *Tab) ScrollUpUntilTheClosestSpace() {
-	if tab.currentPosition >= len(tab.currentPage.Text) {
-		tab.currentPosition = len(tab.currentPage.Text) - 1
-	}
-	tab.currentPosition -= 1 // Compenstaing to additional +1 on every return
-	for {
-		tab.currentPosition -= 1
-		if tab.currentPosition < 0 {
-			tab.currentPosition = 0
-			return
-		}
-		if len(strings.Trim(tab.currentPage.Text[tab.currentPosition], " ")) < 2 {
-			tab.currentPosition += 1
-			return
 		}
 	}
 }
