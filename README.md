@@ -5,7 +5,7 @@ Custom gemini CLI client for linux.
 # Navigation
 - ```..``` to go back in history
 - Type the link to go to it, e.g. ```=> news/ ``` can be accessed with ```news``` command
-- You can type a full link and if it atarts with ```gemeni://``` it will try to access it
+- You can type a full link and if it atarts with ```gemini://``` it will try to access it
 - ```/``` scrolls the page 1/2 of the screen up
 - ```\``` scrolls the page 1/2 of the screen down (or the first line) 
 - ```}``` and ```{``` to hop between the white spaces up and down
