@@ -13,17 +13,18 @@ import (
 )
 
 type Page struct {
+	URI string
 	Text []string
 	Links []string
 	L1Headers []string
 	ScrollOffser uint
 }
 
-func ReadRequest(r *Request) *Page {
-	var outp = Page{}
+func ParseRequest(r *Request, Screen ScreenInfo) *Page {
+	var outp = Page{URI: r.URI}
 	outp.Text = make([]string, 0)
 	outp.Links = make([]string, 0)
-	var width, _, _ = term.GetSize(0)
+	var width = Screen.Width
 	for _, rawStr := range strings.Split(string(r.Body), "\n") {
 		var line = rawStr
 		if strings.HasPrefix(rawStr, "=>") {
@@ -85,31 +86,23 @@ func DisplayPage(page *Page) {
 	}
 }
 
-func GetStatusBar(ScreenWidth int, ScreenHeight int, URI string, HistoryLength int, ScrollOffset int, PageLength int) string {
+func GetStatusBar(currentTab *Tab) string {
+	var ScrollOffset = currentTab.currentPosition
 	var sb = strings.Builder{}
-	sb.WriteString(URI)
+	sb.WriteString(currentTab.currentPage.URI)
 	sb.WriteString(" | ")
 	// Page position
-	sb.WriteString("Position: ")
-	sb.WriteString(strconv.Itoa(ScrollOffset))
-	sb.WriteString("-")
-	sb.WriteString(strconv.Itoa(ScrollOffset - 5 + ScreenHeight))
-	sb.WriteString("/")
-	sb.WriteString(strconv.Itoa(PageLength))
-	sb.WriteString(" | ")
-	sb.WriteString("History: ")
-	sb.WriteString(strconv.Itoa(HistoryLength))
-	sb.WriteString(" | ")
-	sb.WriteString("Window size: ")
-	sb.WriteString(strconv.Itoa(ScreenWidth))
-	sb.WriteString(" x ")
-	sb.WriteString(strconv.Itoa(ScreenHeight))
-	sb.WriteString(" | ")
+	sb.WriteString(fmt.Sprintf("Position: %v-%v/%v | ", ScrollOffset, ScrollOffset - 5 + currentTab.screenInfo.Height, len(currentTab.currentPage.Text)))
+	sb.WriteString(fmt.Sprintf("History: %v | ", currentTab.historyLength))
+	sb.WriteString(fmt.Sprintf("Window size: %v x %v | ", currentTab.screenInfo.Width, currentTab.screenInfo.Height))
 	sb.WriteString("WillSmith v.")
 	sb.WriteString(VersionName)
 	sb.WriteString(" | ")
-	if(sb.Len() >= ScreenWidth) {
-		return sb.String()[0:ScreenWidth-1]
+	if currentTab.PendingRequests > 0 {
+		sb.WriteString(fmt.Sprintf("Pending requests: %v", currentTab.PendingRequests))
+	}
+	if(sb.Len() >= currentTab.screenInfo.Width) {
+		return sb.String()[0:currentTab.screenInfo.Width-1]
 	}
 	return sb.String()
 }
@@ -126,4 +119,14 @@ func WriteLine(Width int) {
 		fmt.Print("=")
 	}
 	fmt.Println()
+}
+
+func RenderPage(currentTab *Tab) {
+	ClearConsole()
+	fmt.Println(GetStatusBar(currentTab))
+	WriteLine(currentTab.screenInfo.Width)
+	currentTab.currentPage.ScrollOffser = uint(currentTab.currentPosition)
+	DisplayPage(&currentTab.currentPage)
+	WriteLine(currentTab.screenInfo.Width)
+	fmt.Print("Enter command: >")
 }

@@ -1,0 +1,6 @@
+# CHANGELOG
+
+## 0.4a
+- Added changelog
+- Made requests asynchronous
+- Added dynamic rescaling

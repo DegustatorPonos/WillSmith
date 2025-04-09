@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+
 // Returns the path that does not contain the top layer
 // Example: gemini://a/b/c/ -> gemini://a/b
 func GoBackOneLayer(inp string) string {
@@ -56,4 +57,3 @@ func CompactAllBackwardsMotions(inp string) string {
 	}
 	return outp
 }
-
