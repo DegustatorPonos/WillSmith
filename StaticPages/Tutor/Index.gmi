@@ -7,7 +7,7 @@ This tutorial should give you the foundation of navigation and usage of this sof
 There are 3 main parts of the interface: status bar, page display and command line. The latter is used for interacting with the interface - all the motions are commands. 
 For example, ':r' will reload the page. The empty or invalid command will rerender the page.
 
-# Navigation
+# Scroling 101
 
 Depending on the screen size you are using you might need to scroll up already. You can do it with '/' command.
 If you want to scroll down, use '\' command
@@ -20,6 +20,7 @@ The status bar is separated in different spaces. Let's go through all of them in
 - History - the depth of the history. If this value is greater than 0 you can go back.
 - Window size - the size of the screen in symbols. Format:<Width> x <Height>
 - Name of the software + version
+- Sometimes another sign appears - that's the ammount of pages the browser is loading in the background
 
 # Navigation
 
@@ -37,6 +38,16 @@ For convinience the '/' symbol in the end of a link is NOT the part of the relat
 If you want to navigate by index, you can use the ':<index>' command, where the index is the number in the square brackets before the link
 ## Example
 Try navigating to the previous pages by their indexes.
+
+## Flow control
+- To cancel all pending requests, use ':u' command.
+- ':r' command reloads the current page from the server
+
+# Scrolling
+There are 3 main ways of scrolling - by half a page, by empty lines or by by topics. Here we will discuss all of them one by one:
+- By half a page. To do that, use '/' and '\' commands to scroll down and up. You can also scroll off the bounds of a page
+- By empty lines. Keys '{' and '}' used for that. '}' moves you to the next empty line and '{' does the opposite
+- By topics. Works exactly like with the empty lines, but you move to the lines, that start with '#' symbols
 
 # Misc
 
