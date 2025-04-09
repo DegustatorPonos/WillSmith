@@ -32,6 +32,36 @@ func CreateCommandChannel(controlChannel *chan int) chan string {
 	return outpChannel
 }
 
+// Down until the closest string starting with '#'
+func (tab *Tab) ScrollDownUntilTheClosestHeader() { 
+	if tab.currentPosition >= len(tab.currentPage.Text) {
+		tab.currentPosition = len(tab.currentPage.Text) - 1
+	}
+	for {
+		tab.currentPosition -= 1
+		if tab.currentPosition <= 0 || strings.HasPrefix(tab.currentPage.Text[tab.currentPosition], "#"){
+			if tab.currentPosition < 0 {
+				tab.currentPosition = 0
+			}
+			return
+		}
+	}
+}
+
+// Up until the closest string starting with '#'
+func (tab *Tab) ScrollUpUntilTheClosestHeader() { 
+	if tab.currentPosition >= len(tab.currentPage.Text) {
+		tab.currentPosition = len(tab.currentPage.Text) - 1
+	}
+	var MaxPosition = len(tab.currentPage.Text)
+	for {
+		tab.currentPosition += 1
+		if tab.currentPosition == MaxPosition || strings.HasPrefix(tab.currentPage.Text[tab.currentPosition], "#") {
+			return
+		}
+	}
+}
+
 func (tab *Tab) ScrollDownUntilTheClosestSpace() {
 	if tab.currentPosition >= len(tab.currentPage.Text) {
 		tab.currentPosition = len(tab.currentPage.Text) - 1
@@ -97,6 +127,12 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 			return true
 		case "{": // Scroll up until the closest space
 			currentTab.ScrollUpUntilTheClosestSpace()
+			return true
+		case "[": // Scroll down until the closest header
+			currentTab.ScrollDownUntilTheClosestHeader()
+			return true
+		case "]": // Scroll up until the closest header 
+			currentTab.ScrollUpUntilTheClosestHeader()
 			return true
 	}
 
