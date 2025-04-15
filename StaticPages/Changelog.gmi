@@ -4,3 +4,6 @@
 - Added changelog
 - Made requests asynchronous
 - Added dynamic rescaling
+
+### 0.4.1a
+- Rearranged the status bar, making it shorter

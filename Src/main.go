@@ -2,7 +2,7 @@ package main
 
 // The main app flow
 
-const VersionName string = "0.4a"
+const VersionName string = "0.4.1a"
 const HomePageFile string = "file://../StaticPages/IndexPage"
 
 const CTRL_CH_LEN int = 2
