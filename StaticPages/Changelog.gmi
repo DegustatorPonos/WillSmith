@@ -7,3 +7,4 @@
 
 ### 0.4.1a
 - Rearranged the status bar, making it shorter
+- Fixed the bug when error messages were still displyed for canceled pages
