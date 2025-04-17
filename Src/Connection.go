@@ -21,6 +21,11 @@ type Request struct {
 	Body []byte
 }
 
+type RequestCommand struct {
+	URL string
+	MandatoryReload bool
+}
+
 const CON_CHAN_ID int = 2
 const CON_CHAN_BUF_LEN int = 1
 
@@ -132,15 +137,15 @@ func GetErrorMessage(errorCode int, connectedURL string) *Request {
 	return ServeErrorMessage(ERR_BODY_READ, connectedURL)
 }
 
-func ConnectionTask(RequestChan *chan string, ResponceChan *chan *Request, TerminationChan *chan bool, controlChannel *chan int) {
+func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Request, TerminationChan *chan bool, controlChannel *chan int) {
 	defer close(*ResponceChan)
 	var PendingRequests = make([]string, 0)
 	var PendngRequestsChan = make(chan *Request, CON_CHAN_BUF_LEN)
 	for {
 		select {
 		case req := <-*RequestChan:
-			PendingRequests = append(PendingRequests, req)
-			go GetPageTask(req, &PendngRequestsChan)
+			PendingRequests = append(PendingRequests, req.URL)
+			go GetPageTask(req.URL, &PendngRequestsChan)
 			// Sending a request here
 			continue
 
@@ -178,7 +183,7 @@ func GetPageTask(URI string, ResponceChan *chan *Request) {
 	*ResponceChan <- resp
 }
 
-func CreateConnectionTask(RequestChan *chan string, TerminationChan *chan bool, controlChannel *chan int) *chan *Request {
+func CreateConnectionTask(RequestChan *chan RequestCommand, TerminationChan *chan bool, controlChannel *chan int) *chan *Request {
 	var outpChannel = make(chan *Request, CON_CHAN_BUF_LEN)
 	go ConnectionTask(RequestChan, &outpChannel, TerminationChan, controlChannel)
 	return &outpChannel

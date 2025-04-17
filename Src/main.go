@@ -31,13 +31,13 @@ func (tab *Tab) AddPage(newPage string) {
 	tab.historyLength += 1
 }
 
-func (tab *Tab) PopPage(requestChannel chan string) {
+func (tab *Tab) PopPage(requestChannel chan RequestCommand) {
 	if tab.historyLength > 1 {
 		tab.historyLength -= 2
 	} else {
 		tab.historyLength -= 1
 	}
-	requestChannel <- tab.history[tab.historyLength]
+	requestChannel <- RequestCommand{ URL: tab.history[tab.historyLength] }
 }
 
 func main() {
@@ -49,7 +49,7 @@ func main() {
 
 	// CHANNELING
 	var ControlChan = make(chan int, CTRL_CH_LEN)
-	var RequestChan = make(chan string, REQ_CH_LEN)
+	var RequestChan = make(chan RequestCommand, REQ_CH_LEN)
 	var TerminationChan = make(chan bool, REQ_CH_LEN)
 	
 	// STARTING COROUTINES
@@ -58,7 +58,7 @@ func main() {
 	var ScreenInfoChannel = GetScreenChannel(&ControlChan)
 
 	// Getting a start page
-	RequestChan <- HomePageFile
+	RequestChan <- RequestCommand{URL: HomePageFile}
 	// Handling events
 	for {
 		CommandType := <- ControlChan
