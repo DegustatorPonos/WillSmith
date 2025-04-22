@@ -98,9 +98,8 @@ func GetStatusBar(currentTab *Tab) string {
 	if currentTab.PendingRequests > 0 {
 		sb.WriteString(fmt.Sprintf("Pending requests: %v | ", currentTab.PendingRequests))
 	}
-	sb.WriteString("WillSmith v.")
-	sb.WriteString(VersionName)
-	sb.WriteString(" | ")
+	sb.WriteString(fmt.Sprintf("WillSmith v.%v | ", VersionName))
+	// sb.WriteString(fmt.Sprintf("Cashed paged %v | ", len(Cashe.CashedPages)))
 	if(sb.Len() >= currentTab.screenInfo.Width) {
 		return sb.String()[0:currentTab.screenInfo.Width-1]
 	}

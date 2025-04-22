@@ -46,6 +46,8 @@ var dialer = tls.Dialer{
 	Config: conf,
 }
 
+var Cashe PagesCashe = PagesCashe{CashedPages: make(map[string]CashedPage)}
+
 // Sends a request to the server and returns a responce
 func SendRequest(URI string, port int) *Request{
 	if(strings.HasPrefix(URI, "file")) {
@@ -145,8 +147,20 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 		select {
 		case req := <-*RequestChan:
 			PendingRequests = append(PendingRequests, req.URL)
-			go GetPageTask(req.URL, &PendngRequestsChan)
+
+			// Checking for a page in cashe
+			if req.MandatoryReload {
+				Cashe.InvalidatePage(req.URL)
+			}
+			var CashedPage = Cashe.GetPageFromCashe(req.URL)
+			if CashedPage != nil {
+				fmt.Println("Retrived a page from cashe")
+				PendngRequestsChan <- CashedPage
+				continue
+			}
+
 			// Sending a request here
+			go GetPageTask(req.URL, &PendngRequestsChan)
 			continue
 
 		case <-*TerminationChan:
@@ -171,6 +185,7 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 					*controlChannel <- CON_CHAN_ID
 				}
 			}
+			Cashe.AddPage(*resp)
 			continue
 
 		}

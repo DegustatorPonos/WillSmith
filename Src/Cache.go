@@ -21,7 +21,7 @@ type CashedPage struct {
 
 // Adds request to cashed pages
 func (inp *PagesCashe) AddPage(ToAdd Request) {
-	if !inp.CheckCasheValidity(ToAdd.URI) {
+	if inp.CheckCasheValidity(ToAdd.URI) {
 		return
 	}
 
@@ -52,7 +52,7 @@ func (inp *PagesCashe) CheckCasheValidity(query string) bool {
 
 	if val.InvalidationTime.After(time.Now()) {
 		inp.InvalidatePage(query)
-return false
+		return false
 	}
 	return true
 }
