@@ -89,18 +89,17 @@ func DisplayPage(page *Page) {
 func GetStatusBar(currentTab *Tab) string {
 	var ScrollOffset = currentTab.currentPosition
 	var sb = strings.Builder{}
-	sb.WriteString(currentTab.currentPage.URI)
+	sb.WriteString(strings.TrimPrefix(currentTab.currentPage.URI, "gemini://"))
 	sb.WriteString(" | ")
 	// Page position
 	sb.WriteString(fmt.Sprintf("Position: %v-%v/%v | ", ScrollOffset, ScrollOffset - 5 + currentTab.screenInfo.Height, len(currentTab.currentPage.Text)))
 	sb.WriteString(fmt.Sprintf("History: %v | ", currentTab.historyLength))
 	sb.WriteString(fmt.Sprintf("Window size: %v x %v | ", currentTab.screenInfo.Width, currentTab.screenInfo.Height))
-	sb.WriteString("WillSmith v.")
-	sb.WriteString(VersionName)
-	sb.WriteString(" | ")
 	if currentTab.PendingRequests > 0 {
-		sb.WriteString(fmt.Sprintf("Pending requests: %v", currentTab.PendingRequests))
+		sb.WriteString(fmt.Sprintf("Pending requests: %v | ", currentTab.PendingRequests))
 	}
+	sb.WriteString(fmt.Sprintf("WillSmith v.%v | ", VersionName))
+	// sb.WriteString(fmt.Sprintf("Cashed paged %v | ", len(Cashe.CashedPages)))
 	if(sb.Len() >= currentTab.screenInfo.Width) {
 		return sb.String()[0:currentTab.screenInfo.Width-1]
 	}

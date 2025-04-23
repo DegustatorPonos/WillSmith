@@ -95,7 +95,7 @@ func (tab *Tab) ScrollUpUntilTheClosestSpace() {
 }
 
 // Returns true if the app should still run
-func HandleCommand(command string, currentTab *Tab, requestChan chan string, TerminationChan chan bool) (bool) {
+func HandleCommand(command string, currentTab *Tab, requestChan chan RequestCommand, TerminationChan chan bool) (bool) {
 	switch command {
 		case "": // Rerendering the page
 			return true
@@ -105,7 +105,7 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 			currentTab.PopPage(requestChan)
 			return true
 		case ":r": // Reload current page
-			requestChan <- currentTab.history[currentTab.historyLength - 1]
+		requestChan <- RequestCommand{URL: currentTab.history[currentTab.historyLength - 1], MandatoryReload: true}
 			return true
 		case ":u": // Abort all current responces
 			TerminationChan <- true
@@ -151,7 +151,7 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 		if !strings.HasSuffix(command, "/") && !IsAnEndpoint(command) {
 			command = strings.Join([]string{command,"/"}, "")
 		}
-		requestChan <- command
+		requestChan <- RequestCommand{ URL: command }
 		currentTab.PendingRequests += 1
 		return true
 	}
@@ -160,7 +160,7 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan string, Ter
 	if slices.Contains(currentTab.currentPage.Links, command) {
 		fmt.Print("Navigating to a next page...")
 		var newURI = AppendToLink(currentTab.currentPage.URI, command)
-		requestChan <- newURI 
+		requestChan <- RequestCommand{ URL: newURI  }
 		currentTab.PendingRequests += 1
 		return true
 	}

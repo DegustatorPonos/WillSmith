@@ -4,3 +4,8 @@
 - Added changelog
 - Made requests asynchronous
 - Added dynamic rescaling
+
+### 0.4.1a
+- Added pages caching. This might solve long reload times
+- Rearranged the status bar, making it shorter
+- Fixed the bug when error messages were still displyed for canceled pages

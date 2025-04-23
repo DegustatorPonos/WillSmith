@@ -12,7 +12,7 @@ Custom gemini CLI client for linux.
 - ```]``` and ```[``` to hop between headers up and down
 - ```:q``` to quit. Ctrl-c also works but does not clear the screen
 - ```:r``` to reload the current page
-- ```:r``` to cancel page loading
+- ```:u``` to cancel page loading
 - ```:<number>``` to go to the link by it's index (is placed in the square brackets after every link)
 
 ## Collisions
@@ -26,7 +26,7 @@ Currently there is no installation option, but you can run it directly by runnin
 
 # TODO:
 ## Current major change in progress:
-- [ ] Cashing pages
+- [ ] Files downloads
 
 ## Before release tasks:
 - [x] Add a navigation between different pages
@@ -34,8 +34,8 @@ Currently there is no installation option, but you can run it directly by runnin
 - [x] Index page
 - [x] Custom error code messages
 - [x] Async page loading
-- [ ] Files downloads
-- [ ] Better navigation(Go to topics, etc)
+- [x] Cashing pages
+- [x] Better navigation(Go to topics, etc)
 - [ ] More commands to control flow
 
 ## Long-term plans:
