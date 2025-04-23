@@ -2,15 +2,15 @@ package main
 
 import "time"
 
-// Time after which the cashe will be concidered outdated
-var CasheTTL time.Duration = time.Minute * 5
+// Time after which the cache will be concidered outdated
+var CacheTTL time.Duration = time.Minute * 5
 
-type PagesCashe struct {
-	CashedPages map[string]CashedPage
+type PagesCache struct {
+	CachedPages map[string]CachedPage
 }
 
-// Single cashed page
-type CashedPage struct {
+// Single cached page
+type CachedPage struct {
 	Request Request
 	FirstRequested time.Time
 	InvalidationTime time.Time
@@ -19,33 +19,33 @@ type CashedPage struct {
 	TTL time.Duration
 }
 
-// Adds request to cashed pages
-func (inp *PagesCashe) AddPage(ToAdd Request) {
-	if inp.CheckCasheValidity(ToAdd.URI) {
+// Adds request to cached pages
+func (inp *PagesCache) AddPage(ToAdd Request) {
+	if inp.CheckCacheValidity(ToAdd.URI) {
 		return
 	}
 
-	inp.CashedPages[ToAdd.URI] = CashedPage{
+	inp.CachedPages[ToAdd.URI] = CachedPage{
 		Request: ToAdd,
 		FirstRequested: time.Now(),
-		InvalidationTime: time.Now().Add(CasheTTL),
+		InvalidationTime: time.Now().Add(CacheTTL),
 	}
 }
 
-func (inp *PagesCashe) GetPageFromCashe(query string) *Request {
-	var val, exists = inp.CashedPages[query]
+func (inp *PagesCache) GetPageFromCache(query string) *Request {
+	var val, exists = inp.CachedPages[query]
 	if exists {
 		return &val.Request
 	}
 	return nil
 }
 
-func (inp *PagesCashe) InvalidatePage(query string) {
-	delete(inp.CashedPages, query)
+func (inp *PagesCache) InvalidatePage(query string) {
+	delete(inp.CachedPages, query)
 }
 
-func (inp *PagesCashe) CheckCasheValidity(query string) bool {
-	var val, exists = inp.CashedPages[query]
+func (inp *PagesCache) CheckCacheValidity(query string) bool {
+	var val, exists = inp.CachedPages[query]
 	if !exists {
 		return false
 	}
@@ -57,9 +57,9 @@ func (inp *PagesCashe) CheckCasheValidity(query string) bool {
 	return true
 }
 
-func (inp *PagesCashe) ClearOutdatedPages() {
-	for k := range inp.CashedPages {
-		if !inp.CheckCasheValidity(k) {
+func (inp *PagesCache) ClearOutdatedPages() {
+	for k := range inp.CachedPages {
+		if !inp.CheckCacheValidity(k) {
 			inp.InvalidatePage(k)
 		}
 	}
