@@ -100,6 +100,8 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan RequestComm
 		case "": // Rerendering the page
 			return true
 		case ":q": // Quitting the app
+			SendInfo("=========== END OF SESSION ===========")
+			SendInfo("")
 			return false
 		case "..": // Going to the previous page
 			currentTab.PopPage(requestChan)

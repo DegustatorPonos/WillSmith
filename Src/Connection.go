@@ -146,15 +146,19 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 	for {
 		select {
 		case req := <-*RequestChan:
-			PendingRequests = append(PendingRequests, req.URL)
+			for strings.HasSuffix(req.URL, "//") {
+				req.URL = strings.TrimSuffix(req.URL, "/") 
+			}
+			SendInfo(fmt.Sprintf("Requesting \"%v\"", req.URL))
 
+			PendingRequests = append(PendingRequests, req.URL)
 			// Checking for a page in cashe
 			if req.MandatoryReload {
 				Cache.InvalidatePage(req.URL)
 			}
 			var CachedPage = Cache.GetPageFromCache(req.URL)
 			if CachedPage != nil {
-				fmt.Println("Retrived a page from cashe")
+				SendInfo(fmt.Sprintf("Retrived \"%v\" from cashe", req.URL))
 				PendngRequestsChan <- CachedPage
 				continue
 			}
@@ -170,6 +174,7 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 
 		case resp := <- PendngRequestsChan:
 			// Checking if the page we recived was requested or we got an error page
+			SendInfo(fmt.Sprintf("Retrived \"%v\"", resp.URI))
 			if len(PendingRequests) == 0 && strings.HasPrefix(resp.URI, "file://../StaticPages/Errors/") {
 				*ResponceChan <- resp
 				*controlChannel <- CON_CHAN_ID

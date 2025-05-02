@@ -56,6 +56,7 @@ func main() {
 	var CommandsChannel = CreateCommandChannel(&ControlChan)
 	var ResponceChannel = CreateConnectionTask(&RequestChan, &TerminationChan, &ControlChan)
 	var ScreenInfoChannel = GetScreenChannel(&ControlChan)
+	CreateLoggingTask()
 
 	// Getting a start page
 	RequestChan <- RequestCommand{URL: HomePageFile}
