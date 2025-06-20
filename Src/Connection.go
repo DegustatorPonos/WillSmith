@@ -13,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	renders "WillSmith/renders"
+	logger "WillSmith/Logger"
 )
 
 type Request struct {
@@ -26,6 +29,11 @@ type RequestCommand struct {
 	MandatoryReload bool
 }
 
+type SpecialPage struct {
+	Name string
+	RenderFunc func()[]byte
+}
+
 const CON_CHAN_ID int = 2
 const CON_CHAN_BUF_LEN int = 1
 
@@ -37,6 +45,13 @@ const ERR_CLIENT_CERTS string = "file://../StaticPages/Errors/ClientCerts"
 const ERR_INPUT_EXPECTED string = "file://../StaticPages/Errors/InputExpected"
 
 const DEFAULT_PORT int = 1965
+
+var SpecialPages = []SpecialPage {
+	SpecialPage{
+		Name: "../StaticPages/IndexPage",
+		RenderFunc: renders.GetIndexPage,
+	},
+}
 
 var conf = &tls.Config{
 	InsecureSkipVerify: true,
@@ -114,6 +129,12 @@ func ServeErrorMessage(errorPage string, link string) *Request {
 // Serves the file as a responce. Should be invoked when it starts with file://
 func ServeFile(link string) *Request {
 	var FilePath = strings.TrimPrefix(link, "file://")
+	var isSpecial, renderFunc = GetSpecificRenderer(FilePath)
+	if isSpecial {
+		var file = renderFunc()
+		var outp = Request{ResultCode: 20, Body: file, URI: link}
+		return &outp
+	}
 	var file, fopenerr = os.ReadFile(FilePath)
 	if fopenerr != nil {
 		return &Request{ResultCode: 40}
@@ -149,7 +170,7 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 			for strings.HasSuffix(req.URL, "//") {
 				req.URL = strings.TrimSuffix(req.URL, "/") 
 			}
-			SendInfo(fmt.Sprintf("Requesting \"%v\"", req.URL))
+			logger.SendInfo(fmt.Sprintf("Requesting \"%v\"", req.URL))
 
 			PendingRequests = append(PendingRequests, req.URL)
 			// Checking for a page in cashe
@@ -158,7 +179,7 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 			}
 			var CachedPage = Cache.GetPageFromCache(req.URL)
 			if CachedPage != nil {
-				SendInfo(fmt.Sprintf("Retrived \"%v\" from cashe", req.URL))
+				logger.SendInfo(fmt.Sprintf("Retrived \"%v\" from cashe", req.URL))
 				PendngRequestsChan <- CachedPage
 				continue
 			}
@@ -166,7 +187,7 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 			// Sending a request here
 			go GetPageTask(req.URL, &PendngRequestsChan)
 			continue
-
+		
 		case <-*TerminationChan:
 			// Clearing all pending requests
 			PendingRequests = make([]string, 0)
@@ -174,7 +195,7 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 
 		case resp := <- PendngRequestsChan:
 			// Checking if the page we recived was requested or we got an error page
-			SendInfo(fmt.Sprintf("Retrived \"%v\"", resp.URI))
+			logger.SendInfo(fmt.Sprintf("Retrived \"%v\"", resp.URI))
 			if len(PendingRequests) == 0 && strings.HasPrefix(resp.URI, "file://../StaticPages/Errors/") {
 				*ResponceChan <- resp
 				*controlChannel <- CON_CHAN_ID
@@ -207,4 +228,14 @@ func CreateConnectionTask(RequestChan *chan RequestCommand, TerminationChan *cha
 	var outpChannel = make(chan *Request, CON_CHAN_BUF_LEN)
 	go ConnectionTask(RequestChan, &outpChannel, TerminationChan, controlChannel)
 	return &outpChannel
+}
+
+func GetSpecificRenderer(fileName string) (bool, func()[]byte) {
+	for _, v := range SpecialPages {
+		logger.SendInfo(fmt.Sprintf("Comparing file links %v and %v\n", fileName, v.Name))
+		if v.Name == fileName {
+			return true, v.RenderFunc
+		}
+	}
+	return false, nil
 }

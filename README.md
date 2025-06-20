@@ -13,6 +13,8 @@ Custom gemini CLI client for linux.
 - ```:q``` to quit. Ctrl-c also works but does not clear the screen
 - ```:r``` to reload the current page
 - ```:u``` to cancel page loading
+- ```:b <description>``` to add to bookmarks
+- ```:delb``` to delete from bookmarks
 - ```:<number>``` to go to the link by it's index (is placed in the square brackets after every link)
 
 ## Collisions
@@ -36,6 +38,7 @@ Currently there is no installation option, but you can run it directly by runnin
 - [x] Async page loading
 - [x] Cashing pages
 - [x] Better navigation(Go to topics, etc)
+- [x] Adding/removing from bookmarks 
 - [ ] More commands to control flow
 
 ## Long-term plans:

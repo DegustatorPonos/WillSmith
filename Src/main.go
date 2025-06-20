@@ -1,8 +1,10 @@
 package main
 
+import logger "WillSmith/Logger"
+
 // The main app flow
 
-const VersionName string = "0.4.1a"
+const VersionName string = "0.4.2a"
 const HomePageFile string = "file://../StaticPages/IndexPage"
 
 const CTRL_CH_LEN int = 2
@@ -56,10 +58,11 @@ func main() {
 	var CommandsChannel = CreateCommandChannel(&ControlChan)
 	var ResponceChannel = CreateConnectionTask(&RequestChan, &TerminationChan, &ControlChan)
 	var ScreenInfoChannel = GetScreenChannel(&ControlChan)
-	CreateLoggingTask()
+	logger.CreateLoggingTask()
 
 	// Getting a start page
 	RequestChan <- RequestCommand{URL: HomePageFile}
+
 	// Handling events
 	for {
 		CommandType := <- ControlChan
