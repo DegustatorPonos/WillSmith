@@ -49,6 +49,12 @@ There are 3 main ways of scrolling - by half a page, by empty lines or by by top
 - By empty lines. Keys '{' and '}' used for that. '}' moves you to the next empty line and '{' does the opposite
 - By topics. Works exactly like with the empty lines, but you move to the lines, that start with '#' symbols
 
+# Bookmarks
+Bookmarks are shownd on the index page of the browser. You can add or remove them.
+To add a bookmark, use ':b <description>' command, where <description> is the quick summary of a site
+To delete a bookmark, use ':delb' command. By itself it will try to delete the website you are currently on.
+To change that behaiour you can pass either a full or a relative link as a second parameter
+
 # Misc
 
 - Exiting browser 

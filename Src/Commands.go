@@ -7,6 +7,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	renders "WillSmith/renders"
+	logger "WillSmith/Logger"
 )
 
 const CMD_CHAN_BUFF_SIZE int = 1
@@ -100,6 +103,8 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan RequestComm
 		case "": // Rerendering the page
 			return true
 		case ":q": // Quitting the app
+			logger.SendInfo("=========== END OF SESSION ===========")
+			logger.SendInfo("")
 			return false
 		case "..": // Going to the previous page
 			currentTab.PopPage(requestChan)
@@ -133,7 +138,46 @@ func HandleCommand(command string, currentTab *Tab, requestChan chan RequestComm
 			return true
 		case "]": // Scroll up until the closest header 
 			currentTab.ScrollUpUntilTheClosestHeader()
+		currentTab.ScrollUpUntilTheClosestHeader()
+		return true
+	}
+
+	// Bookmarks
+	if strings.HasPrefix(command, ":b ") {
+		var args = strings.Split(command, " ")
+		if len(args) < 2 {
 			return true
+		}
+		var description = args[1]
+		renders.AddBookmark(renders.Bookmark{
+			URL: currentTab.currentPage.URI, 
+			Description: description,
+		})
+		return true
+	}
+
+	if strings.HasPrefix(command, ":delb") {
+		var args = strings.Split(command, " ")
+		if len(args) < 2 {
+			renders.DeleteBookmark(currentTab.currentPage.URI)
+			return true
+		}
+		var URLarg = args[1]
+		if strings.HasPrefix(URLarg, "gemini://") || strings.HasPrefix(URLarg, "file://") {
+			renders.DeleteBookmark(currentTab.currentPage.URI)
+		}
+		var LinkIndex, err = strconv.Atoi(URLarg)
+		if err == nil && LinkIndex < len(currentTab.currentPage.Links) {
+			var newURI = currentTab.currentPage.Links[LinkIndex]
+			renders.DeleteBookmark(newURI)
+			requestChan <- RequestCommand{URL: currentTab.history[currentTab.historyLength - 1], MandatoryReload: true}
+		}
+		if slices.Contains(currentTab.currentPage.Links, URLarg) {
+			var newURI = AppendToLink(currentTab.currentPage.URI, command)
+			renders.DeleteBookmark(newURI)
+			requestChan <- RequestCommand{URL: currentTab.history[currentTab.historyLength - 1], MandatoryReload: true}
+		}
+		return true
 	}
 
 	// Going to a link by its index

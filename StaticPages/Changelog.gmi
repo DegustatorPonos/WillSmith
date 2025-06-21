@@ -9,3 +9,7 @@
 - Added pages caching. This might solve long reload times
 - Rearranged the status bar, making it shorter
 - Fixed the bug when error messages were still displyed for canceled pages
+
+### 0.4.2a
+- Added logging. To see logs use https://github.com/DegustatorPonos/DebugTool
+- Added bookmarks conrtol commands
