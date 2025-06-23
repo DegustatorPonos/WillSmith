@@ -1,4 +1,4 @@
-package main
+package geminiprotocol
 
 // Everything related to server connections, routing and data retrival
 
@@ -14,8 +14,9 @@ import (
 	"strings"
 	"time"
 
-	renders "WillSmith/renders"
+	globalstate "WillSmith/GlobalState"
 	logger "WillSmith/Logger"
+	renders "WillSmith/Renderers"
 )
 
 type Request struct {
@@ -35,7 +36,6 @@ type SpecialPage struct {
 }
 
 const CON_CHAN_ID int = 2
-const CON_CHAN_BUF_LEN int = 1
 
 const ERR_HOST_NOT_FOUND string = "file://../StaticPages/Errors/NotFound"
 const ERR_BODY_READ string = "file://../StaticPages/Errors/BodyErr"
@@ -163,7 +163,7 @@ func GetErrorMessage(errorCode int, connectedURL string) *Request {
 func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Request, TerminationChan *chan bool, controlChannel *chan int) {
 	defer close(*ResponceChan)
 	var PendingRequests = make([]string, 0)
-	var PendngRequestsChan = make(chan *Request, CON_CHAN_BUF_LEN)
+	var PendngRequestsChan = make(chan *Request, globalstate.State.ChannelLengths.ConnectionBuffer)
 	for {
 		select {
 		case req := <-*RequestChan:
@@ -225,7 +225,7 @@ func GetPageTask(URI string, ResponceChan *chan *Request) {
 }
 
 func CreateConnectionTask(RequestChan *chan RequestCommand, TerminationChan *chan bool, controlChannel *chan int) *chan *Request {
-	var outpChannel = make(chan *Request, CON_CHAN_BUF_LEN)
+	var outpChannel = make(chan *Request, globalstate.State.ChannelLengths.ConnectionBuffer)
 	go ConnectionTask(RequestChan, &outpChannel, TerminationChan, controlChannel)
 	return &outpChannel
 }

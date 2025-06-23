@@ -1,12 +1,19 @@
-package main
+package geminiprotocol
 
-import "time"
+import (
+	globalstate "WillSmith/GlobalState"
+	"time"
+)
 
 // Time after which the cache will be concidered outdated
-var CacheTTL time.Duration = time.Minute * 5
+var CacheTTL time.Duration
 
 type PagesCache struct {
 	CachedPages map[string]CachedPage
+}
+
+func InitCache() {
+	CacheTTL = time.Minute * time.Duration(globalstate.CurrentSettings.CacheTTL)
 }
 
 // Single cached page

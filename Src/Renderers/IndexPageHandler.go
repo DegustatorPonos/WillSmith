@@ -1,4 +1,4 @@
-package renders
+package renderers
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 )
 
 const HomePageFile string = "../StaticPages/IndexPage"
-const BookmarkCache string = "../StaticPages/Bookmarls"
+const BookmarkCache string = "../StaticPages/Bookmarks.json"
 
 type bookmarkList struct {
 	Data []Bookmark `json:"data"`
@@ -62,7 +62,7 @@ func updateBookmarks() error {
 	}
 	defer file.Close()
 	var inititalData = bookmarkList{Data: bookmarks}
-	var body, jsonerr = json.Marshal(inititalData)
+	var body, jsonerr = json.MarshalIndent(inititalData, "", "	")
 	if jsonerr != nil {
 		return jsonerr
 	}
@@ -77,7 +77,7 @@ func createBookmarkFile() (bool, []byte ) {
 	}
 	defer file.Close()
 	var inititalData = bookmarkList{Data: []Bookmark{}}
-	var body, jsonerr = json.Marshal(inititalData)
+	var body, jsonerr = json.MarshalIndent(inititalData, "", "	")
 	if jsonerr != nil {
 		return false, nil
 	}

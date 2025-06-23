@@ -13,3 +13,8 @@
 ### 0.4.2a
 - Added logging. To see logs use https://github.com/DegustatorPonos/DebugTool
 - Added bookmarks conrtol commands
+
+### 0.5.0a 
+- added app settings system
+- Huge codebase refactor
+- Added JSON indenting to bookmarks

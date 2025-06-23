@@ -1,21 +1,19 @@
 package logger
 
 import (
+	globalstate "WillSmith/GlobalState"
 	"fmt"
 	"net/http"
 	"strings"
 )
 
 const DebugToolPort int = 6969
-const LOG_CH_LEN int = 2
 
 const InfoMessage string    = "Info"
 const WarningMessage string = "Warn"
 const ErrorMessage string   = "Err"
 
-const IsLoggingEnabled bool = true
-
-var logChan = make(chan LogMessage, LOG_CH_LEN)
+var logChan = make(chan LogMessage, globalstate.State.ChannelLengths.LogChannel)
 
 type LogMessage struct {
 	Message string
@@ -23,25 +21,25 @@ type LogMessage struct {
 }
 
 func SendInfo(inp string) {
-	if IsLoggingEnabled {
+	if globalstate.CurrentSettings.EnableLogging {
 		logChan <- LogMessage{Type: InfoMessage, Message: inp}
 	}
 }
 
 func SendWarning(inp string) {
-	if IsLoggingEnabled {
+	if globalstate.CurrentSettings.EnableLogging {
 		logChan <- LogMessage{Type: WarningMessage, Message: inp}
 	}
 }
 
 func SendError(inp string) {
-	if IsLoggingEnabled {
+	if globalstate.CurrentSettings.EnableLogging {
 		logChan <- LogMessage{Type: ErrorMessage, Message: inp}
 	}
 }
 
 func CreateLoggingTask() {
-	if IsLoggingEnabled {
+	if globalstate.CurrentSettings.EnableLogging {
 		go loggingTask(logChan)
 	}
 }
