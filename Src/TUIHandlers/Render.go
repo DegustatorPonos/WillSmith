@@ -1,8 +1,10 @@
-package main
+package tuihandlers
 
 // Everything related to rendering
 
 import (
+	geminiprotocol "WillSmith/GeminiProtocol"
+	globalstate "WillSmith/GlobalState"
 	"fmt"
 	"os"
 	"os/exec"
@@ -20,7 +22,7 @@ type Page struct {
 	ScrollOffser uint
 }
 
-func ParseRequest(r *Request, Screen ScreenInfo) *Page {
+func ParseRequest(r *geminiprotocol.Request, Screen ScreenInfo) *Page {
 	var outp = Page{URI: r.URI}
 	outp.Text = make([]string, 0)
 	outp.Links = make([]string, 0)
@@ -86,22 +88,22 @@ func DisplayPage(page *Page) {
 	}
 }
 
-func GetStatusBar(currentTab *Tab) string {
-	var ScrollOffset = currentTab.currentPosition
+func GetStatusBar(CurrentTab *Tab) string {
+	var ScrollOffset = CurrentTab.CurrentPosition
 	var sb = strings.Builder{}
-	sb.WriteString(strings.TrimPrefix(currentTab.currentPage.URI, "gemini://"))
+	sb.WriteString(strings.TrimPrefix(CurrentTab.CurrentPage.URI, "gemini://"))
 	sb.WriteString(" | ")
 	// Page position
-	sb.WriteString(fmt.Sprintf("Position: %v-%v/%v | ", ScrollOffset, ScrollOffset - 5 + currentTab.screenInfo.Height, len(currentTab.currentPage.Text)))
-	sb.WriteString(fmt.Sprintf("History: %v | ", currentTab.historyLength))
-	sb.WriteString(fmt.Sprintf("Window size: %v x %v | ", currentTab.screenInfo.Width, currentTab.screenInfo.Height))
-	if currentTab.PendingRequests > 0 {
-		sb.WriteString(fmt.Sprintf("Pending requests: %v | ", currentTab.PendingRequests))
+	sb.WriteString(fmt.Sprintf("Position: %v-%v/%v | ", ScrollOffset, ScrollOffset - 5 + CurrentTab.ScreenInfo.Height, len(CurrentTab.CurrentPage.Text)))
+	sb.WriteString(fmt.Sprintf("History: %v | ", CurrentTab.HistoryLength))
+	sb.WriteString(fmt.Sprintf("Window size: %v x %v | ", CurrentTab.ScreenInfo.Width, CurrentTab.ScreenInfo.Height))
+	if CurrentTab.PendingRequests > 0 {
+		sb.WriteString(fmt.Sprintf("Pending requests: %v | ", CurrentTab.PendingRequests))
 	}
-	sb.WriteString(fmt.Sprintf("WillSmith v.%v | ", VersionName))
+	sb.WriteString(fmt.Sprintf("WillSmith v.%v | ", globalstate.State.VersionName))
 	// sb.WriteString(fmt.Sprintf("Cashed paged %v | ", len(Cashe.CashedPages)))
-	if(sb.Len() >= currentTab.screenInfo.Width) {
-		return sb.String()[0:currentTab.screenInfo.Width-1]
+	if(sb.Len() >= CurrentTab.ScreenInfo.Width) {
+		return sb.String()[0:CurrentTab.ScreenInfo.Width-1]
 	}
 	return sb.String()
 }
@@ -120,12 +122,12 @@ func WriteLine(Width int) {
 	fmt.Println()
 }
 
-func RenderPage(currentTab *Tab) {
+func RenderPage(CurrentTab *Tab) {
 	ClearConsole()
-	fmt.Println(GetStatusBar(currentTab))
-	WriteLine(currentTab.screenInfo.Width)
-	currentTab.currentPage.ScrollOffser = uint(currentTab.currentPosition)
-	DisplayPage(&currentTab.currentPage)
-	WriteLine(currentTab.screenInfo.Width)
+	fmt.Println(GetStatusBar(CurrentTab))
+	WriteLine(CurrentTab.ScreenInfo.Width)
+	CurrentTab.CurrentPage.ScrollOffser = uint(CurrentTab.CurrentPosition)
+	DisplayPage(&CurrentTab.CurrentPage)
+	WriteLine(CurrentTab.ScreenInfo.Width)
 	fmt.Print("Enter command: >")
 }
