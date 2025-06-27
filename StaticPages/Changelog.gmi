@@ -18,3 +18,7 @@
 - added app settings system
 - Huge codebase refactor
 - Added JSON indenting to bookmarks
+
+### 0.5.1a
+- More refactoring
+- Added pages downloading

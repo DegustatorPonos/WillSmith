@@ -1,6 +1,8 @@
 package tuihandlers
 
-import geminiprotocol "WillSmith/GeminiProtocol"
+import (
+	geminiprotocol "WillSmith/GeminiProtocol"
+)
 
 type Tab struct {
 	History []string
@@ -33,4 +35,3 @@ func (tab *Tab) PopPage(requestChannel chan geminiprotocol.RequestCommand) {
 	}
 	requestChannel <- geminiprotocol.RequestCommand{ URL: tab.History[tab.HistoryLength] }
 }
-

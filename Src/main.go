@@ -3,6 +3,7 @@ package main
 import (
 	geminiprotocol "WillSmith/GeminiProtocol"
 	globalstate "WillSmith/GlobalState"
+	localresources "WillSmith/LocalResources"
 	logger "WillSmith/Logger"
 	tuihandlers "WillSmith/TUIHandlers"
 )
@@ -27,7 +28,7 @@ func main() {
 	
 	// STARTING COROUTINES
 	var CommandsChannel = tuihandlers.CreateCommandChannel(&ControlChan)
-	var ResponceChannel = geminiprotocol.CreateConnectionTask(&RequestChan, &TerminationChan, &ControlChan)
+	var ResponceChannel, DownloadChannel = geminiprotocol.CreateConnectionTask(&RequestChan, &TerminationChan, &ControlChan)
 	var ScreenInfoChannel = tuihandlers.GetScreenChannel(&ControlChan)
 	logger.CreateLoggingTask()
 	geminiprotocol.InitCache()
@@ -67,6 +68,10 @@ func main() {
 			}
 			tuihandlers.RenderPage(&CurrentTab)
 			continue 
+
+		case geminiprotocol.DOWNLOAD_CHAN_ID :
+			var resp = <- *DownloadChannel
+			localresources.Download(resp.URI, resp.Body)
 
 		}
 	}

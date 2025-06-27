@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	geminiprotocol "WillSmith/GeminiProtocol"
+	localresources "WillSmith/LocalResources"
 	logger "WillSmith/Logger"
-	renders "WillSmith/Renderers"
 )
 
 const CMD_CHAN_BUFF_SIZE int = 1
@@ -150,34 +150,35 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 			return true
 		}
 		var description = args[1]
-		renders.AddBookmark(renders.Bookmark{
+		localresources.AddBookmark(localresources.Bookmark{
 			URL: CurrentTab.CurrentPage.URI, 
 			Description: description,
 		})
 		return true
 	}
 
+	// Delete command
 	if strings.HasPrefix(command, ":delb") {
 		var args = strings.Split(command, " ")
 		if len(args) < 2 {
-			renders.DeleteBookmark(CurrentTab.CurrentPage.URI)
+			localresources.DeleteBookmark(CurrentTab.CurrentPage.URI)
 			return true
 		}
 		var URLarg = args[1]
-		if strings.HasPrefix(URLarg, "gemini://") || strings.HasPrefix(URLarg, "file://") {
-			renders.DeleteBookmark(CurrentTab.CurrentPage.URI)
+		localresources.DeleteBookmark(getURIFromArgument(URLarg, CurrentTab))
+		return true
+	}
+
+	// Downloading
+	if strings.HasPrefix(command, ":d") {
+		var args = strings.Split(command, " ")
+		if len(args) < 2 {
+			requestChan <- geminiprotocol.RequestCommand{ URL: CurrentTab.CurrentPage.URI, TargetAction: geminiprotocol.DOWNLOAD }
+			return true
 		}
-		var LinkIndex, err = strconv.Atoi(URLarg)
-		if err == nil && LinkIndex < len(CurrentTab.CurrentPage.Links) {
-			var newURI = CurrentTab.CurrentPage.Links[LinkIndex]
-			renders.DeleteBookmark(newURI)
-			requestChan <- geminiprotocol.RequestCommand{URL: CurrentTab.History[CurrentTab.HistoryLength - 1], MandatoryReload: true}
-		}
-		if slices.Contains(CurrentTab.CurrentPage.Links, URLarg) {
-			var newURI = geminiprotocol.AppendToLink(CurrentTab.CurrentPage.URI, command)
-			renders.DeleteBookmark(newURI)
-			requestChan <- geminiprotocol.RequestCommand{URL: CurrentTab.History[CurrentTab.HistoryLength - 1], MandatoryReload: true}
-		}
+		var URLarg = args[1]
+		var targetURI = getURIFromArgument(URLarg, CurrentTab)
+		requestChan <- geminiprotocol.RequestCommand{ URL: targetURI, TargetAction: geminiprotocol.DOWNLOAD }
 		return true
 	}
 
@@ -211,4 +212,23 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 	}
 
 	return true
+}
+
+func getURIFromArgument(arg string, CurrentTab *Tab) string {
+	var trg = arg
+	var LinkIndex, err = strconv.Atoi(arg)
+	if err == nil && LinkIndex < len(CurrentTab.CurrentPage.Links) {
+		trg = CurrentTab.CurrentPage.Links[LinkIndex]
+	}
+	if strings.HasPrefix(trg, "gemini") || strings.HasPrefix(trg, "file") {
+		if !strings.HasSuffix(trg, "/") && !geminiprotocol.IsAnEndpoint(trg) {
+			trg = strings.Join([]string{trg ,"/"}, "")
+		}
+		return trg
+	}
+	if slices.Contains(CurrentTab.CurrentPage.Links, trg) {
+		var newURI = geminiprotocol.AppendToLink(CurrentTab.CurrentPage.URI, trg)
+		return newURI
+	}
+	return trg
 }

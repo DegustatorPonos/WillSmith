@@ -19,15 +19,24 @@ import (
 	renders "WillSmith/Renderers"
 )
 
+type TargetActionType int
+
+const (
+	RENDER TargetActionType = iota 
+	DOWNLOAD
+)
+
 type Request struct {
 	URI string
 	ResultCode byte
 	Body []byte
+	target TargetActionType
 }
 
 type RequestCommand struct {
 	URL string
 	MandatoryReload bool
+	TargetAction TargetActionType
 }
 
 type SpecialPage struct {
@@ -36,6 +45,7 @@ type SpecialPage struct {
 }
 
 const CON_CHAN_ID int = 2
+const DOWNLOAD_CHAN_ID int = 21
 
 const ERR_HOST_NOT_FOUND string = "file://../StaticPages/Errors/NotFound"
 const ERR_BODY_READ string = "file://../StaticPages/Errors/BodyErr"
@@ -160,16 +170,13 @@ func GetErrorMessage(errorCode int, connectedURL string) *Request {
 	return ServeErrorMessage(ERR_BODY_READ, connectedURL)
 }
 
-func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Request, TerminationChan *chan bool, controlChannel *chan int) {
+func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Request, DownloadChan *chan *Request, TerminationChan *chan bool, controlChannel *chan int) {
 	defer close(*ResponceChan)
 	var PendingRequests = make([]string, 0)
 	var PendngRequestsChan = make(chan *Request, globalstate.State.ChannelLengths.ConnectionBuffer)
 	for {
 		select {
 		case req := <-*RequestChan:
-			for strings.HasSuffix(req.URL, "//") {
-				req.URL = strings.TrimSuffix(req.URL, "/") 
-			}
 			logger.SendInfo(fmt.Sprintf("Requesting \"%v\"", req.URL))
 
 			PendingRequests = append(PendingRequests, req.URL)
@@ -180,12 +187,13 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 			var CachedPage = Cache.GetPageFromCache(req.URL)
 			if CachedPage != nil {
 				logger.SendInfo(fmt.Sprintf("Retrived \"%v\" from cashe", req.URL))
+				CachedPage.target = req.TargetAction
 				PendngRequestsChan <- CachedPage
 				continue
 			}
 
 			// Sending a request here
-			go GetPageTask(req.URL, &PendngRequestsChan)
+			go GetPageTask(req.URL, req.TargetAction, &PendngRequestsChan)
 			continue
 		
 		case <-*TerminationChan:
@@ -196,6 +204,11 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 		case resp := <- PendngRequestsChan:
 			// Checking if the page we recived was requested or we got an error page
 			logger.SendInfo(fmt.Sprintf("Retrived \"%v\"", resp.URI))
+			if resp.target == DOWNLOAD {
+				*DownloadChan <- resp
+				*controlChannel <- DOWNLOAD_CHAN_ID
+				continue
+			}
 			if len(PendingRequests) == 0 && strings.HasPrefix(resp.URI, "file://../StaticPages/Errors/") {
 				*ResponceChan <- resp
 				*controlChannel <- CON_CHAN_ID
@@ -219,15 +232,17 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 }
 
 // A coroutine summoned by the ConnectionTask
-func GetPageTask(URI string, ResponceChan *chan *Request) {
+func GetPageTask(URI string, target TargetActionType, ResponceChan *chan *Request) {
 	var resp = SendRequest(URI, DEFAULT_PORT)
+	resp.target = target
 	*ResponceChan <- resp
 }
 
-func CreateConnectionTask(RequestChan *chan RequestCommand, TerminationChan *chan bool, controlChannel *chan int) *chan *Request {
+func CreateConnectionTask(RequestChan *chan RequestCommand, TerminationChan *chan bool, controlChannel *chan int) (*chan *Request, *chan *Request) {
 	var outpChannel = make(chan *Request, globalstate.State.ChannelLengths.ConnectionBuffer)
-	go ConnectionTask(RequestChan, &outpChannel, TerminationChan, controlChannel)
-	return &outpChannel
+	var downlaodChannel = make(chan *Request, globalstate.State.ChannelLengths.DownloadBuffer)
+	go ConnectionTask(RequestChan, &outpChannel, &downlaodChannel, TerminationChan, controlChannel)
+	return &outpChannel, &downlaodChannel
 }
 
 func GetSpecificRenderer(fileName string) (bool, func()[]byte) {

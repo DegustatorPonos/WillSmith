@@ -11,6 +11,8 @@ const SettingsLocation = "../Settings.json"
 type Settings struct {
 	EnableLogging bool `json:"enablelogging"`
 	CacheTTL int `json:"cachettl"`
+	DownloadFolder string `json:"downloadfolder"`
+	BookmarksFile string  `json:"bookmarksfile"`
 }
 
 var CurrentSettings Settings
@@ -18,6 +20,8 @@ var CurrentSettings Settings
 var defaultSettings = Settings {
 	EnableLogging: false,
 	CacheTTL: 5,
+	DownloadFolder: "../Dowloads",
+	BookmarksFile: "../StaticPages/Bookmarks.json",
 }
 
 func ReadSettings() {
