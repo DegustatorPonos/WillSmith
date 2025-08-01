@@ -149,7 +149,7 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 		if len(args) < 2 {
 			return true
 		}
-		var description = args[1]
+		var description = strings.Join(args[1:], " ")
 		localresources.AddBookmark(localresources.Bookmark{
 			URL: CurrentTab.CurrentPage.URI, 
 			Description: description,

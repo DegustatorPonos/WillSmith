@@ -22,3 +22,4 @@
 ### 0.5.1a
 - More refactoring
 - Added pages downloading
+- Fix: bookmarks descriptions can now nontain more than one word
