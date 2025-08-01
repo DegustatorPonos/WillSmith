@@ -14,7 +14,7 @@ import (
 )
 
 const CMD_CHAN_BUFF_SIZE int = 1
-const CMD_CHAN_ID int = 1
+const CMD_CHAN_ID int = 10
 
 func NavigationTask(output chan string, controlChannel *chan int) {
 	var reader = bufio.NewReader(os.Stdin)
@@ -31,6 +31,7 @@ func NavigationTask(output chan string, controlChannel *chan int) {
 }
 
 func CreateCommandChannel(controlChannel *chan int) chan string {
+	logger.SendError("Flag")
 	var outpChannel = make(chan string, CMD_CHAN_BUFF_SIZE);
 	// go NavigationTask(outpChannel, controlChannel)
 	return outpChannel
@@ -107,7 +108,7 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 			logger.SendInfo("=========== END OF SESSION ===========")
 			logger.SendInfo("")
 			return false
-		case "..": // Going to the previous page
+		case ":..": // Going to the previous page
 			CurrentTab.PopPage(requestChan)
 			return true
 		case ":r": // Reload Current page
@@ -146,6 +147,7 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 	if !strings.HasPrefix(command, ":") {
 		return true
 	}
+	command = strings.TrimPrefix(command, ":")
 
 	// Bookmarks
 	if strings.HasPrefix(command, ":b ") {
@@ -187,11 +189,8 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 	}
 
 	// Going to a link by its index
-	if strings.HasPrefix(command, ":") {
-		var LinkIndex, err = strconv.Atoi(strings.ReplaceAll(command, ":", ""))
-		if err != nil || LinkIndex >= len(CurrentTab.CurrentPage.Links) {
-			return true
-		}
+	var LinkIndex, err = strconv.Atoi(strings.ReplaceAll(command, ":", ""))
+	if err == nil && LinkIndex < len(CurrentTab.CurrentPage.Links) {
 		command = CurrentTab.CurrentPage.Links[LinkIndex]
 	}
 

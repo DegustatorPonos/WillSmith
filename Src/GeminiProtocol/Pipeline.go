@@ -8,7 +8,7 @@ import (
 )
 
 
-func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Request, DownloadChan *chan *Request, TerminationChan *chan bool, controlChannel *chan int) {
+func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Request, DownloadChan *chan *Request, TerminationChan *chan bool) {
 	defer close(*ResponceChan)
 	var PendingRequests = make([]string, 0)
 	var PendngRequestsChan = make(chan *Request, globalstate.State.ChannelLengths.ConnectionBuffer)
@@ -44,12 +44,10 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 			logger.SendInfo(fmt.Sprintf("Retrived \"%v\"", resp.URI))
 			if resp.target == DOWNLOAD {
 				*DownloadChan <- resp
-				*controlChannel <- DOWNLOAD_CHAN_ID
 				continue
 			}
 			if len(PendingRequests) != 0 && strings.HasPrefix(resp.URI, "file://../StaticPages/Errors/") {
 				*ResponceChan <- resp
-				*controlChannel <- CON_CHAN_ID
 			}
 			for i, val := range PendingRequests {
 				if(val == resp.URI) {
@@ -59,12 +57,10 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 						PendingRequests = PendingRequests[:i]
 					}
 					*ResponceChan <- resp
-					*controlChannel <- CON_CHAN_ID
 				}
 			}
 			Cache.AddPage(*resp)
 			continue
-
 		}
 	}
 }
@@ -76,9 +72,9 @@ func GetPageTask(URI string, target TargetActionType, ResponceChan *chan *Reques
 	*ResponceChan <- resp
 }
 
-func CreateConnectionTask(RequestChan *chan RequestCommand, TerminationChan *chan bool, controlChannel *chan int) (*chan *Request, *chan *Request) {
+func CreateConnectionTask(RequestChan *chan RequestCommand, TerminationChan *chan bool) (*chan *Request, *chan *Request) {
 	var outpChannel = make(chan *Request, globalstate.State.ChannelLengths.ConnectionBuffer)
 	var downlaodChannel = make(chan *Request, globalstate.State.ChannelLengths.DownloadBuffer)
-	go ConnectionTask(RequestChan, &outpChannel, &downlaodChannel, TerminationChan, controlChannel)
+	go ConnectionTask(RequestChan, &outpChannel, &downlaodChannel, TerminationChan)
 	return &outpChannel, &downlaodChannel
 }

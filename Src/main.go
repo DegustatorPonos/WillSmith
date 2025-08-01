@@ -23,15 +23,14 @@ func main() {
 	// Initial size
 
 	// CHANNELING
-	var ControlChan = make(chan int, globalstate.State.ChannelLengths.ControlChannel)
 	var RequestChan = make(chan geminiprotocol.RequestCommand, globalstate.State.ChannelLengths.RequestChannel)
 	var TerminationChan = make(chan bool, globalstate.State.ChannelLengths.RequestChannel)
 	
 	// STARTING COROUTINES
 	// var CommandsChannel = tuihandlers.CreateCommandChannel(&ControlChan)
-	var CommandsChannel, EchoChannel = tuihandlers.CreateInputHandler(&ControlChan)
-	var ResponceChannel, DownloadChannel = geminiprotocol.CreateConnectionTask(&RequestChan, &TerminationChan, &ControlChan)
-	var ScreenInfoChannel = tuihandlers.GetScreenChannel(&ControlChan)
+	var CommandsChannel, EchoChannel = tuihandlers.CreateInputHandler()
+	var ResponceChannel, DownloadChannel = geminiprotocol.CreateConnectionTask(&RequestChan, &TerminationChan)
+	var ScreenInfoChannel = tuihandlers.GetScreenChannel()
 	logger.CreateLoggingTask()
 	geminiprotocol.InitCache()
 
@@ -40,8 +39,10 @@ func main() {
 
 	// Handling events
 	for {
+		logger.SendInfo("Listening")
 		select {
 		case responce := <- *ResponceChannel:
+			logger.SendInfo("Drawing")
 			CurrentTab.PendingRequests -= 1
 			if CurrentTab.PendingRequests < 0 {
 				CurrentTab.PendingRequests = 0
@@ -54,23 +55,29 @@ func main() {
 			continue
 
 		case NewSize := <- ScreenInfoChannel:
+			logger.SendInfo("Rescaling")
 			CurrentTab.ScreenInfo = NewSize
 			CurrentTab.CurrentPage = *tuihandlers.ParseRequest(&CurrentTab.CurrentResp, CurrentTab.ScreenInfo)
 			tuihandlers.RenderPage(&CurrentTab)
+			continue
 
 		case command := <- CommandsChannel:
+			logger.SendInfo("command")
 			if !(tuihandlers.HandleCommand(command, &CurrentTab, RequestChan, TerminationChan)) {
 				tuihandlers.ClearConsole()
 				return
 			}
 			tuihandlers.RenderPage(&CurrentTab)
-			continue 
+			continue
 
 		case resp := <- *DownloadChannel:
 			localresources.Download(resp.URI, resp.Body)
+			continue
 
 		case char := <- EchoChannel:
+			logger.SendInfo("Echo")
 			fmt.Printf(string(char))
+			continue
 
 		}
 	}

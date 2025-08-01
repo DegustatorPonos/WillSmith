@@ -48,13 +48,13 @@ func inputHandler(outpChan *chan string, echoChan *chan byte) {
 
 		switch r {
 		case 127:
-			*echoChan <- '\b'
-			*echoChan <- ' '
-			*echoChan <- '\b'
 			if builder.Len() > 0 {
 				var temp = builder.String()
 				builder.Reset()
 				builder.WriteString(temp[:len(temp)-1])
+				*echoChan <- '\b'
+				*echoChan <- ' '
+				*echoChan <- '\b'
 			}
 		default:
 			*echoChan <- r
@@ -63,7 +63,7 @@ func inputHandler(outpChan *chan string, echoChan *chan byte) {
 	}
 }
 
-func CreateInputHandler(controlChannel *chan int) (chan string, chan byte) {
+func CreateInputHandler() (chan string, chan byte) {
 	var outp = make(chan string, _INPUT_CHAN_LEN)
 	var echo = make(chan byte, _ECHO_CHANNEL_LEN)
 	// Disabling terminal echo
