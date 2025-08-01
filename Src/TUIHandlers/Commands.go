@@ -32,7 +32,7 @@ func NavigationTask(output chan string, controlChannel *chan int) {
 
 func CreateCommandChannel(controlChannel *chan int) chan string {
 	var outpChannel = make(chan string, CMD_CHAN_BUFF_SIZE);
-	go NavigationTask(outpChannel, controlChannel)
+	// go NavigationTask(outpChannel, controlChannel)
 	return outpChannel
 }
 
@@ -140,6 +140,10 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 		case "]": // Scroll up until the closest header 
 			CurrentTab.ScrollUpUntilTheClosestHeader()
 		CurrentTab.ScrollUpUntilTheClosestHeader()
+		return true
+	}
+
+	if !strings.HasPrefix(command, ":") {
 		return true
 	}
 
