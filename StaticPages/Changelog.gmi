@@ -19,9 +19,11 @@
 - Huge codebase refactor
 - Added JSON indenting to bookmarks
 
-### 0.5.1a
+### 0.6a
 - Added pages downloading
 - Controls rework: you are no linger required to enter single-character commands. The back comand changed.
+- You now get more information about runtime connection errors
 - More refactoring
+- Fix: Long uninterrupted lines could crash the app
 - Fix: bookmarks descriptions can now nontain more than one word
 - Fix: back comands can no longer move out of history boundaries

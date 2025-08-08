@@ -1,7 +1,7 @@
 package globalstate
 
 var State = AppState {
-	VersionName: "0.5.1a",
+	VersionName: "0.6a",
 
 	ChannelLengths: ChannelsParams{
 		ControlChannel: 3,
