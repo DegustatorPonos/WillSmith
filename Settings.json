@@ -1,4 +1,5 @@
 {
+    "connectiontimeout": 10,
 	"enablelogging": true,
 	"cachettl": 5,
 	"downloadfolder": "../Downloads",

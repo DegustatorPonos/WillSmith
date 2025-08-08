@@ -11,10 +11,6 @@
 		{
 			"url": "gemini://thrig.me/blog/2025/07/27/terminal-escapes.gmi",
 			"description": "escape_codes"
-		},
-		{
-			"url": "file://../StaticPages/IndexPage",
-			"description": "test bookamrk"
 		}
 	]
 }

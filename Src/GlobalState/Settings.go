@@ -9,6 +9,7 @@ import (
 const SettingsLocation = "../Settings.json"
 
 type Settings struct {
+	ConnectionTimeout int `json:"connectiontimeout"`
 	EnableLogging bool `json:"enablelogging"`
 	CacheTTL int `json:"cachettl"`
 	DownloadFolder string `json:"downloadfolder"`
@@ -18,6 +19,7 @@ type Settings struct {
 var CurrentSettings Settings
 
 var defaultSettings = Settings {
+	ConnectionTimeout: 10,
 	EnableLogging: false,
 	CacheTTL: 5,
 	DownloadFolder: "../Dowloads",

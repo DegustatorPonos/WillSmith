@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	globalstate "WillSmith/GlobalState"
 	logger "WillSmith/Logger"
 	renders "WillSmith/Renderers"
 )
@@ -81,12 +82,13 @@ func SendRequest(URI string, port int) *Request{
 	if urlerr != nil {
 		return ServeFile(ERR_HOST_NOT_FOUND, URI)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalstate.CurrentSettings.ConnectionTimeout) * time.Second)
 	var conn, err = dialer.DialContext(ctx, "tcp", url_parsed.Host+":"+strconv.Itoa(port))
 	cancel()
 	if err != nil {
-		return ServeFile(ERR_HOST_NOT_FOUND, URI)
+		return generateErrorResponce(URI, err)
 	}
+
 	conn.Write([]byte(URI + "\r\n"))
 	defer conn.Close()
 	
@@ -99,11 +101,11 @@ func SendRequest(URI string, port int) *Request{
 		return GetErrorMessage(int(RespCode), URI)
 	}
 	if HeaderParsingErr != nil {
-		return ServeFile(ERR_BODY_READ, URI)
+		return generateErrorResponce(URI, HeaderParsingErr)
 	}
 	var body, bodyReadingErr = io.ReadAll(reader)
 	if bodyReadingErr != nil {
-		return ServeFile(ERR_BODY_READ, URI)
+		return generateErrorResponce(URI, bodyReadingErr)
 	} 
 
 	var outp = Request{URI: URI, ResultCode: RespCode, Body: body}
@@ -132,6 +134,14 @@ func ServeErrorMessage(errorPage string, link string) *Request {
 	}
 	var outp = Request{ResultCode: 20, Body: file, URI: link}
 	return &outp
+}
+
+func generateErrorResponce(link string, err error) *Request {
+	return &Request {
+		ResultCode: 20,
+		URI: link,
+		Body: renders.CreateErrorWrapper(err)(),
+	}
 }
 
 // Serves the file as a responce. Should be invoked when it starts with file://
