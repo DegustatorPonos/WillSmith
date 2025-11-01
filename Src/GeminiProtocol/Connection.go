@@ -57,7 +57,7 @@ const ERR_INPUT_EXPECTED string = "file://../StaticPages/Errors/InputExpected"
 const DEFAULT_PORT int = 1965
 
 var SpecialPages = []SpecialPage {
-	SpecialPage{
+	SpecialPage {
 		Name: "../StaticPages/IndexPage",
 		RenderFunc: renders.GetIndexPage,
 	},
@@ -74,7 +74,7 @@ var dialer = tls.Dialer{
 var Cache PagesCache = PagesCache{CachedPages: make(map[string]CachedPage)}
 
 // Sends a request to the server and returns a responce
-func SendRequest(URI string, port int) *Request{
+func SendRequest(URI string, port int, verify bool) *Request{
 	if(strings.HasPrefix(URI, "file")) {
 		return ServeFile(URI, URI)
 	}
@@ -96,14 +96,18 @@ func SendRequest(URI string, port int) *Request{
 	conn.Write([]byte(URI))
 	var reader = bufio.NewReader(conn)
 	var header, _ = reader.ReadString('\n')
-	var RespCode, HeaderParsingErr = ParseResponceHeader(header)
-	if(RespCode < 20 || RespCode > 29) {
-		return GetErrorMessage(int(RespCode), URI)
-	}
-	if HeaderParsingErr != nil {
-		return generateErrorResponce(URI, HeaderParsingErr)
+	var RespCode byte
+	if verify {
+		RespCode, HeaderParsingErr := ParseResponceHeader(header)
+		if(RespCode < 20 || RespCode > 29) {
+			return GetErrorMessage(int(RespCode), URI)
+		}
+		if HeaderParsingErr != nil {
+			return generateErrorResponce(URI, HeaderParsingErr)
+		}
 	}
 	var body, bodyReadingErr = io.ReadAll(reader)
+	logger.SendInfo(fmt.Sprintf("Got %d bytes from gemispace (verified: %v)", len(body), verify))
 	if bodyReadingErr != nil {
 		return generateErrorResponce(URI, bodyReadingErr)
 	} 
@@ -186,4 +190,12 @@ func GetSpecificRenderer(fileName string) (bool, func()[]byte) {
 		}
 	}
 	return false, nil
+}
+
+func ShouldVerify(requestType TargetActionType) bool {
+	switch requestType {
+	case DOWNLOAD:
+		return false
+	}
+	return true
 }

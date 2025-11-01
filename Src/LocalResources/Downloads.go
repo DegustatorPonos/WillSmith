@@ -10,7 +10,6 @@ import (
 )
 
 func Download(ResourceURL string, body []byte) {
-	logger.SendWarning("flag")
 	var fileName = getRequestedFileName(ResourceURL)
 	var Path = getNewFilePath(fileName)
 	var file, err = os.Create(Path)
@@ -20,6 +19,7 @@ func Download(ResourceURL string, body []byte) {
 	}
 	defer file.Close()
 	var _, werr = file.Write(body)
+	logger.SendInfo(fmt.Sprintf("Writing %d bytes", len(body)))
 	if werr != nil {
 		logger.SendError(fmt.Sprintf("Unable to write in a file in downloads folder. Original error: %v", werr.Error()))
 	}

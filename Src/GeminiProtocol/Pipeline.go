@@ -67,7 +67,7 @@ func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Reques
 
 // A coroutine summoned by the ConnectionTask
 func GetPageTask(URI string, target TargetActionType, ResponceChan *chan *Request) {
-	var resp = SendRequest(URI, DEFAULT_PORT)
+	var resp = SendRequest(URI, DEFAULT_PORT, ShouldVerify(target))
 	resp.target = target
 	*ResponceChan <- resp
 }

@@ -1,6 +1,7 @@
 package tuihandlers
 
 import (
+	logger "WillSmith/Logger"
 	"bufio"
 	"fmt"
 	"io"
@@ -11,7 +12,6 @@ import (
 
 const _INPUT_CHAN_LEN int = 5
 const _ECHO_CHANNEL_LEN int = 128
-const _PREALLOCATED_BUF int = 64
 
 func inputHandler(outpChan *chan string, echoChan *chan byte) {
 	var builder = strings.Builder{}
@@ -32,10 +32,20 @@ func inputHandler(outpChan *chan string, echoChan *chan byte) {
 			fmt.Println(err.Error())
 		}
 
+		// logger.SendInfo(fmt.Sprintf("Byte: %d", r));
+
 		if !isComand {
-			if r == ':' { // We start typing a comand
+			switch r {
+			case ':':
 				isComand = true
-			} else {
+			case 27: // Escape codes like arrow keys
+				var codeAlternative, codeErr = readEscapeCodes(reader)
+				if codeErr != nil {
+					logger.SendWarning(fmt.Sprintf("Failed to read escape code: %v", codeErr.Error()))
+				}
+				*outpChan <- codeAlternative
+				continue
+			default:
 				*outpChan <- string(r)
 				continue
 			}
@@ -46,8 +56,10 @@ func inputHandler(outpChan *chan string, echoChan *chan byte) {
 			continue
 		}
 
+
 		switch r {
 		case 127:
+			logger.SendWarning("flag1")
 			if builder.Len() > 0 {
 				var temp = builder.String()
 				builder.Reset()
@@ -56,11 +68,29 @@ func inputHandler(outpChan *chan string, echoChan *chan byte) {
 				*echoChan <- ' '
 				*echoChan <- '\b'
 			}
+
 		default:
 			*echoChan <- r
 			builder.WriteByte(r)
 		}
 	}
+}
+
+// By default this function reads 2 bytes from stdio
+func readEscapeCodes(reader *bufio.Reader) (string, error) {
+	// By this point we read 0d27 from stdio
+	var builder = strings.Builder{}
+	for range 2 {
+		var r,  err = reader.ReadByte()
+		if err != nil {
+			if err == io.EOF {
+				return builder.String(), nil
+			}
+			return "", err
+		}
+		builder.WriteByte(r)
+	}
+	return builder.String(), nil
 }
 
 func CreateInputHandler() (chan string, chan byte) {

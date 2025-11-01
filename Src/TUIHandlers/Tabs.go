@@ -10,6 +10,7 @@ type Tab struct {
 	CurrentResp geminiprotocol.Request
 	CurrentPage Page
 	ScreenInfo ScreenInfo
+	// Current line index
 	CurrentPosition int
 	PendingRequests int
 }

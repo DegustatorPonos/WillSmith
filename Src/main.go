@@ -39,10 +39,10 @@ func main() {
 
 	// Handling events
 	for {
-		logger.SendInfo("Listening")
+		// logger.SendInfo("Listening")
 		select {
 		case responce := <- *ResponceChannel:
-			logger.SendInfo("Drawing")
+			// logger.SendInfo("Drawing")
 			CurrentTab.PendingRequests -= 1
 			if CurrentTab.PendingRequests < 0 {
 				CurrentTab.PendingRequests = 0
@@ -55,14 +55,14 @@ func main() {
 			continue
 
 		case NewSize := <- ScreenInfoChannel:
-			logger.SendInfo("Rescaling")
+			// logger.SendInfo("Rescaling")
 			CurrentTab.ScreenInfo = NewSize
 			CurrentTab.CurrentPage = *tuihandlers.ParseRequest(&CurrentTab.CurrentResp, CurrentTab.ScreenInfo)
 			tuihandlers.RenderPage(&CurrentTab)
 			continue
 
 		case command := <- CommandsChannel:
-			logger.SendInfo("command")
+			logger.SendInfo(fmt.Sprintf("Comand: %s", command))
 			if !(tuihandlers.HandleCommand(command, &CurrentTab, RequestChan, TerminationChan)) {
 				tuihandlers.ClearConsole()
 				return

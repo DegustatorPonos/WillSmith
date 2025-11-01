@@ -81,6 +81,14 @@ func (tab *Tab) ScrollDownUntilTheClosestSpace() {
 	}
 }
 
+func (tab *Tab) Scroll(delta int) {
+	var newPosition = tab.CurrentPosition + delta 
+	if newPosition < 0 {
+		return
+	}
+	tab.CurrentPosition = newPosition
+}
+
 func (tab *Tab) ScrollUpUntilTheClosestSpace() {
 	if tab.CurrentPosition >= len(tab.CurrentPage.Text) {
 		tab.CurrentPosition = len(tab.CurrentPage.Text) - 1
@@ -140,8 +148,15 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 			return true
 		case "]": // Scroll up until the closest header 
 			CurrentTab.ScrollUpUntilTheClosestHeader()
-		CurrentTab.ScrollUpUntilTheClosestHeader()
-		return true
+			CurrentTab.ScrollUpUntilTheClosestHeader()
+			return true
+		case "j":
+			CurrentTab.Scroll(1)
+			return true
+		case "k":
+			CurrentTab.Scroll(-1)
+			return true
+
 	}
 
 	if !strings.HasPrefix(command, ":") {
@@ -176,7 +191,7 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 	}
 
 	// Downloading
-	if strings.HasPrefix(command, ":d") {
+	if strings.HasPrefix(command, "d") {
 		var args = strings.Split(command, " ")
 		if len(args) < 2 {
 			requestChan <- geminiprotocol.RequestCommand{ URL: CurrentTab.CurrentPage.URI, TargetAction: geminiprotocol.DOWNLOAD }
