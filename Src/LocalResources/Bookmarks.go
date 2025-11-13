@@ -20,6 +20,7 @@ type Bookmark struct {
 var Bookmarks []Bookmark = nil
 
 func ReadBookmarks() {
+	fmt.Print(fmt.Sprintf("Loading bookmarks from the file '%s'", globalstate.CurrentSettings.BookmarksFile))
 	if Bookmarks != nil {
 		return
 	}

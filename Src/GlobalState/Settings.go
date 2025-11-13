@@ -20,7 +20,7 @@ var CurrentSettings Settings
 
 var defaultSettings = Settings {
 	ConnectionTimeout: 10,
-	EnableLogging: false,
+	EnableLogging: true,
 	CacheTTL: 5,
 	DownloadFolder: "../Dowloads",
 	BookmarksFile: "../StaticPages/Bookmarks.json",

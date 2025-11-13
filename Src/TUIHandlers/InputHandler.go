@@ -90,6 +90,12 @@ func readEscapeCodes(reader *bufio.Reader) (string, error) {
 		}
 		builder.WriteByte(r)
 	}
+	switch builder.String() {
+		case "[A":
+			return "k", nil
+		case "[B":
+			return "j", nil
+	}
 	return builder.String(), nil
 }
 
