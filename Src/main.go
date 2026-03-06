@@ -71,8 +71,10 @@ func main() {
 			continue
 
 		case resp := <- *DownloadChannel:
-			if resp.ResultCode < 20 || resp.ResultCode > 29 {
+			// Valid downloads sometimes return 0 code. Idk why
+			if (resp.ResultCode < 20 || resp.ResultCode > 29) && resp.ResultCode != 0 {
 				logger.SendWarning(fmt.Sprintf("The downloading of %s failed. Result code: %d", resp.URI, resp.ResultCode))
+				logger.SendWarning(fmt.Sprintf("Result body: %s", resp.Body))
 				continue
 			}
 			localresources.Download(resp.URI, resp.Body)

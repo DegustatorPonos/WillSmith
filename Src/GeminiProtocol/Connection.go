@@ -82,6 +82,14 @@ func SendRequest(URI string, port int, verify bool) *Request{
 	if urlerr != nil {
 		return ServeFile(ERR_HOST_NOT_FOUND, URI)
 	}
+	// The provider specified a custom port
+	if strings.Contains(url_parsed.Host, ":") {
+		var parseErr error
+		url_parsed.Host, port, parseErr = splitHostname(url_parsed.Host)
+		if parseErr != nil {
+			return generateErrorResponce(URI, parseErr)
+		}
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalstate.CurrentSettings.ConnectionTimeout) * time.Second)
 	var conn, err = dialer.DialContext(ctx, "tcp", url_parsed.Host+":"+strconv.Itoa(port))
 	cancel()
@@ -142,7 +150,7 @@ func ServeErrorMessage(errorPage string, link string) *Request {
 
 func generateErrorResponce(link string, err error) *Request {
 	return &Request {
-		ResultCode: 20,
+		ResultCode: 100,
 		URI: link,
 		Body: renders.CreateErrorWrapper(err)(),
 	}
@@ -198,4 +206,14 @@ func ShouldVerify(requestType TargetActionType) bool {
 		return false
 	}
 	return true
+}
+
+// Assume that the hostname has a structure of host:port
+func splitHostname(hostname string) (string, int, error) {
+	var parts = strings.Split(hostname, ":")
+	if len(parts) != 2 {
+		return hostname, DEFAULT_PORT, fmt.Errorf("The hostname structure is invalid")
+	}
+	var port, err = strconv.Atoi(parts[1])
+	return parts[0], port, err
 }
