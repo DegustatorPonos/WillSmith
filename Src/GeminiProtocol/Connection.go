@@ -19,15 +19,24 @@ import (
 	renders "WillSmith/Renderers"
 )
 
+type TargetActionType int
+
+const (
+	RENDER TargetActionType = iota 
+	DOWNLOAD
+)
+
 type Request struct {
 	URI string
 	ResultCode byte
 	Body []byte
+	target TargetActionType
 }
 
 type RequestCommand struct {
 	URL string
 	MandatoryReload bool
+	TargetAction TargetActionType
 }
 
 type SpecialPage struct {
@@ -36,6 +45,7 @@ type SpecialPage struct {
 }
 
 const CON_CHAN_ID int = 2
+const DOWNLOAD_CHAN_ID int = 21
 
 const ERR_HOST_NOT_FOUND string = "file://../StaticPages/Errors/NotFound"
 const ERR_BODY_READ string = "file://../StaticPages/Errors/BodyErr"
@@ -47,7 +57,7 @@ const ERR_INPUT_EXPECTED string = "file://../StaticPages/Errors/InputExpected"
 const DEFAULT_PORT int = 1965
 
 var SpecialPages = []SpecialPage {
-	SpecialPage{
+	SpecialPage {
 		Name: "../StaticPages/IndexPage",
 		RenderFunc: renders.GetIndexPage,
 	},
@@ -64,20 +74,21 @@ var dialer = tls.Dialer{
 var Cache PagesCache = PagesCache{CachedPages: make(map[string]CachedPage)}
 
 // Sends a request to the server and returns a responce
-func SendRequest(URI string, port int) *Request{
+func SendRequest(URI string, port int, verify bool) *Request{
 	if(strings.HasPrefix(URI, "file")) {
-		return ServeFile(URI)
+		return ServeFile(URI, URI)
 	}
 	var url_parsed, urlerr = url.Parse(URI)
 	if urlerr != nil {
-		return ServeFile(ERR_HOST_NOT_FOUND)
+		return ServeFile(ERR_HOST_NOT_FOUND, URI)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalstate.CurrentSettings.ConnectionTimeout) * time.Second)
 	var conn, err = dialer.DialContext(ctx, "tcp", url_parsed.Host+":"+strconv.Itoa(port))
 	cancel()
 	if err != nil {
-		return ServeFile(ERR_HOST_NOT_FOUND)
+		return generateErrorResponce(URI, err)
 	}
+
 	conn.Write([]byte(URI + "\r\n"))
 	defer conn.Close()
 	
@@ -85,16 +96,20 @@ func SendRequest(URI string, port int) *Request{
 	conn.Write([]byte(URI))
 	var reader = bufio.NewReader(conn)
 	var header, _ = reader.ReadString('\n')
-	var RespCode, HeaderParsingErr = ParseResponceHeader(header)
-	if(RespCode < 20 || RespCode > 29) {
-		return GetErrorMessage(int(RespCode), URI)
-	}
-	if HeaderParsingErr != nil {
-		return ServeFile(ERR_BODY_READ)
+	var RespCode byte
+	if verify {
+		RespCode, HeaderParsingErr := ParseResponceHeader(header)
+		if(RespCode < 20 || RespCode > 29) {
+			return GetErrorMessage(int(RespCode), URI)
+		}
+		if HeaderParsingErr != nil {
+			return generateErrorResponce(URI, HeaderParsingErr)
+		}
 	}
 	var body, bodyReadingErr = io.ReadAll(reader)
+	logger.SendInfo(fmt.Sprintf("Got %d bytes from gemispace (verified: %v)", len(body), verify))
 	if bodyReadingErr != nil {
-		return ServeFile(ERR_BODY_READ)
+		return generateErrorResponce(URI, bodyReadingErr)
 	} 
 
 	var outp = Request{URI: URI, ResultCode: RespCode, Body: body}
@@ -125,9 +140,16 @@ func ServeErrorMessage(errorPage string, link string) *Request {
 	return &outp
 }
 
+func generateErrorResponce(link string, err error) *Request {
+	return &Request {
+		ResultCode: 20,
+		URI: link,
+		Body: renders.CreateErrorWrapper(err)(),
+	}
+}
 
 // Serves the file as a responce. Should be invoked when it starts with file://
-func ServeFile(link string) *Request {
+func ServeFile(link string, baseURI string) *Request {
 	var FilePath = strings.TrimPrefix(link, "file://")
 	var isSpecial, renderFunc = GetSpecificRenderer(FilePath)
 	if isSpecial {
@@ -139,7 +161,7 @@ func ServeFile(link string) *Request {
 	if fopenerr != nil {
 		return &Request{ResultCode: 40}
 	}
-	var outp = Request{ResultCode: 20, Body: file, URI: link}
+	var outp = Request{ResultCode: 20, Body: file, URI: baseURI}
 	return &outp
 }
 
@@ -160,76 +182,6 @@ func GetErrorMessage(errorCode int, connectedURL string) *Request {
 	return ServeErrorMessage(ERR_BODY_READ, connectedURL)
 }
 
-func ConnectionTask(RequestChan *chan RequestCommand, ResponceChan *chan *Request, TerminationChan *chan bool, controlChannel *chan int) {
-	defer close(*ResponceChan)
-	var PendingRequests = make([]string, 0)
-	var PendngRequestsChan = make(chan *Request, globalstate.State.ChannelLengths.ConnectionBuffer)
-	for {
-		select {
-		case req := <-*RequestChan:
-			for strings.HasSuffix(req.URL, "//") {
-				req.URL = strings.TrimSuffix(req.URL, "/") 
-			}
-			logger.SendInfo(fmt.Sprintf("Requesting \"%v\"", req.URL))
-
-			PendingRequests = append(PendingRequests, req.URL)
-			// Checking for a page in cashe
-			if req.MandatoryReload {
-				Cache.InvalidatePage(req.URL)
-			}
-			var CachedPage = Cache.GetPageFromCache(req.URL)
-			if CachedPage != nil {
-				logger.SendInfo(fmt.Sprintf("Retrived \"%v\" from cashe", req.URL))
-				PendngRequestsChan <- CachedPage
-				continue
-			}
-
-			// Sending a request here
-			go GetPageTask(req.URL, &PendngRequestsChan)
-			continue
-		
-		case <-*TerminationChan:
-			// Clearing all pending requests
-			PendingRequests = make([]string, 0)
-			continue
-
-		case resp := <- PendngRequestsChan:
-			// Checking if the page we recived was requested or we got an error page
-			logger.SendInfo(fmt.Sprintf("Retrived \"%v\"", resp.URI))
-			if len(PendingRequests) == 0 && strings.HasPrefix(resp.URI, "file://../StaticPages/Errors/") {
-				*ResponceChan <- resp
-				*controlChannel <- CON_CHAN_ID
-			}
-			for i, val := range PendingRequests {
-				if(val == resp.URI) {
-					if i != len(PendingRequests) - 1 {
-						PendingRequests = append(PendingRequests[:i], PendingRequests[i+1:]...)
-					} else {
-						PendingRequests = PendingRequests[:i]
-					}
-					*ResponceChan <- resp
-					*controlChannel <- CON_CHAN_ID
-				}
-			}
-			Cache.AddPage(*resp)
-			continue
-
-		}
-	}
-}
-
-// A coroutine summoned by the ConnectionTask
-func GetPageTask(URI string, ResponceChan *chan *Request) {
-	var resp = SendRequest(URI, DEFAULT_PORT)
-	*ResponceChan <- resp
-}
-
-func CreateConnectionTask(RequestChan *chan RequestCommand, TerminationChan *chan bool, controlChannel *chan int) *chan *Request {
-	var outpChannel = make(chan *Request, globalstate.State.ChannelLengths.ConnectionBuffer)
-	go ConnectionTask(RequestChan, &outpChannel, TerminationChan, controlChannel)
-	return &outpChannel
-}
-
 func GetSpecificRenderer(fileName string) (bool, func()[]byte) {
 	for _, v := range SpecialPages {
 		logger.SendInfo(fmt.Sprintf("Comparing file links %v and %v\n", fileName, v.Name))
@@ -238,4 +190,12 @@ func GetSpecificRenderer(fileName string) (bool, func()[]byte) {
 		}
 	}
 	return false, nil
+}
+
+func ShouldVerify(requestType TargetActionType) bool {
+	switch requestType {
+	case DOWNLOAD:
+		return false
+	}
+	return true
 }

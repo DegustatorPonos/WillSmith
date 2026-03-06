@@ -1,4 +1,7 @@
 {
-	"enablelogging": false,
-	"cachettl": 5
+    "connectiontimeout": 10,
+	"enablelogging": true,
+	"cachettl": 5,
+	"downloadfolder": "../Downloads",
+	"bookmarksfile": "../StaticPages/Bookmarks.json"
 }

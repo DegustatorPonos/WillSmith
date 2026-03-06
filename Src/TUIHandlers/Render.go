@@ -24,34 +24,11 @@ type Page struct {
 
 func ParseRequest(r *geminiprotocol.Request, Screen ScreenInfo) *Page {
 	var outp = Page{URI: r.URI}
-	outp.Text = make([]string, 0)
-	outp.Links = make([]string, 0)
 	var width = Screen.Width
-	for _, rawStr := range strings.Split(string(r.Body), "\n") {
-		var line = rawStr
-		if strings.HasPrefix(rawStr, "=>") {
-			outp.Links = append(outp.Links, ParseLink(line))
-			var Prefixless, _ = strings.CutPrefix(line, "=>")
-			line = strings.Join([]string{"=> [", strconv.Itoa(len(outp.Links) - 1), "]", Prefixless}, "")
-		}
-		if len(line) < width {
-			outp.Text = append(outp.Text, line)
-			continue
-		}
-		var rightSide = 0
-		for i :=0; i < len(line); i = rightSide {
-			rightSide = i + width
-			if rightSide >= len(line) {
-				rightSide = len(line)
-				outp.Text = append(outp.Text, strings.Trim(line[i:rightSide], " "))
-				continue
-			}
-			for(rightSide > 0 && line[rightSide] != '\n' && line[rightSide] != ' ') {
-				rightSide--
-			}
-			outp.Text = append(outp.Text, strings.Trim(line[i:rightSide], " "))
-		}
-	}
+	var lines = strings.Split(string(r.Body), "\n")
+	var text, links = processPage(lines, width)
+	outp.Text = text
+	outp.Links = links
 	return &outp
 }
 
@@ -130,4 +107,38 @@ func RenderPage(CurrentTab *Tab) {
 	DisplayPage(&CurrentTab.CurrentPage)
 	WriteLine(CurrentTab.ScreenInfo.Width)
 	fmt.Print("Enter command: >")
+}
+
+// Returns strings and links
+func processPage(input []string, strLen int) ([]string, []string) {
+	var lines = make([]string, 0, len(input))
+	var links = make([]string, 0)
+	for _, v := range input {
+		if strings.HasPrefix(v, "=>") {
+			links = append(links, ParseLink(v))
+			var Prefixless, _ = strings.CutPrefix(v, "=>")
+			v = strings.Join([]string{"=> [", strconv.Itoa(len(links) - 1), "]", Prefixless}, "")
+		}
+		if len(v) < strLen {
+			lines = append(lines, v)
+			continue
+		}
+		var rightSide = 0
+		for i := 0; i < len(v); i = rightSide {
+			rightSide = i + strLen 
+			if rightSide >= len(v) {
+				rightSide = len(v)
+				lines = append(lines, strings.Trim(v[i:rightSide], " "))
+				continue
+			}
+			for(rightSide > i && v[rightSide] != '\n' && v[rightSide] != ' ') {
+				rightSide--
+			}
+			if rightSide == i {
+				rightSide = i + strLen 
+			}
+			lines = append(lines, strings.Trim(v[i:rightSide], " "))
+		}
+	}
+	return lines, links
 }

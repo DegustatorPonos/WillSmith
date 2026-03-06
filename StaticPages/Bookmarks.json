@@ -3,6 +3,14 @@
 		{
 			"url": "gemini://warmedal.se/~antenna/",
 			"description": "One of the best aggregators IMO"
+		},
+		{
+			"url": "gemini://cosmic.voyage/",
+			"description": "cool space gem-novel"
+		},
+		{
+			"url": "gemini://thrig.me/blog/2025/07/27/terminal-escapes.gmi",
+			"description": "escape_codes"
 		}
 	]
 }

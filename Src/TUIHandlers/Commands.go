@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	geminiprotocol "WillSmith/GeminiProtocol"
+	localresources "WillSmith/LocalResources"
 	logger "WillSmith/Logger"
-	renders "WillSmith/Renderers"
 )
 
 const CMD_CHAN_BUFF_SIZE int = 1
-const CMD_CHAN_ID int = 1
+const CMD_CHAN_ID int = 10
 
 func NavigationTask(output chan string, controlChannel *chan int) {
 	var reader = bufio.NewReader(os.Stdin)
@@ -31,8 +31,9 @@ func NavigationTask(output chan string, controlChannel *chan int) {
 }
 
 func CreateCommandChannel(controlChannel *chan int) chan string {
+	logger.SendError("Flag")
 	var outpChannel = make(chan string, CMD_CHAN_BUFF_SIZE);
-	go NavigationTask(outpChannel, controlChannel)
+	// go NavigationTask(outpChannel, controlChannel)
 	return outpChannel
 }
 
@@ -80,6 +81,14 @@ func (tab *Tab) ScrollDownUntilTheClosestSpace() {
 	}
 }
 
+func (tab *Tab) Scroll(delta int) {
+	var newPosition = tab.CurrentPosition + delta 
+	if newPosition < 0 {
+		return
+	}
+	tab.CurrentPosition = newPosition
+}
+
 func (tab *Tab) ScrollUpUntilTheClosestSpace() {
 	if tab.CurrentPosition >= len(tab.CurrentPage.Text) {
 		tab.CurrentPosition = len(tab.CurrentPage.Text) - 1
@@ -107,7 +116,7 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 			logger.SendInfo("=========== END OF SESSION ===========")
 			logger.SendInfo("")
 			return false
-		case "..": // Going to the previous page
+		case ":..": // Going to the previous page
 			CurrentTab.PopPage(requestChan)
 			return true
 		case ":r": // Reload Current page
@@ -139,9 +148,21 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 			return true
 		case "]": // Scroll up until the closest header 
 			CurrentTab.ScrollUpUntilTheClosestHeader()
-		CurrentTab.ScrollUpUntilTheClosestHeader()
+			CurrentTab.ScrollUpUntilTheClosestHeader()
+			return true
+		case "j":
+			CurrentTab.Scroll(1)
+			return true
+		case "k":
+			CurrentTab.Scroll(-1)
+			return true
+
+	}
+
+	if !strings.HasPrefix(command, ":") {
 		return true
 	}
+	command = strings.TrimPrefix(command, ":")
 
 	// Bookmarks
 	if strings.HasPrefix(command, ":b ") {
@@ -149,44 +170,42 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 		if len(args) < 2 {
 			return true
 		}
-		var description = args[1]
-		renders.AddBookmark(renders.Bookmark{
+		var description = strings.Join(args[1:], " ")
+		localresources.AddBookmark(localresources.Bookmark{
 			URL: CurrentTab.CurrentPage.URI, 
 			Description: description,
 		})
 		return true
 	}
 
+	// Delete command
 	if strings.HasPrefix(command, ":delb") {
 		var args = strings.Split(command, " ")
 		if len(args) < 2 {
-			renders.DeleteBookmark(CurrentTab.CurrentPage.URI)
+			localresources.DeleteBookmark(CurrentTab.CurrentPage.URI)
 			return true
 		}
 		var URLarg = args[1]
-		if strings.HasPrefix(URLarg, "gemini://") || strings.HasPrefix(URLarg, "file://") {
-			renders.DeleteBookmark(CurrentTab.CurrentPage.URI)
+		localresources.DeleteBookmark(getURIFromArgument(URLarg, CurrentTab))
+		return true
+	}
+
+	// Downloading
+	if strings.HasPrefix(command, "d") {
+		var args = strings.Split(command, " ")
+		if len(args) < 2 {
+			requestChan <- geminiprotocol.RequestCommand{ URL: CurrentTab.CurrentPage.URI, TargetAction: geminiprotocol.DOWNLOAD }
+			return true
 		}
-		var LinkIndex, err = strconv.Atoi(URLarg)
-		if err == nil && LinkIndex < len(CurrentTab.CurrentPage.Links) {
-			var newURI = CurrentTab.CurrentPage.Links[LinkIndex]
-			renders.DeleteBookmark(newURI)
-			requestChan <- geminiprotocol.RequestCommand{URL: CurrentTab.History[CurrentTab.HistoryLength - 1], MandatoryReload: true}
-		}
-		if slices.Contains(CurrentTab.CurrentPage.Links, URLarg) {
-			var newURI = geminiprotocol.AppendToLink(CurrentTab.CurrentPage.URI, command)
-			renders.DeleteBookmark(newURI)
-			requestChan <- geminiprotocol.RequestCommand{URL: CurrentTab.History[CurrentTab.HistoryLength - 1], MandatoryReload: true}
-		}
+		var URLarg = args[1]
+		var targetURI = getURIFromArgument(URLarg, CurrentTab)
+		requestChan <- geminiprotocol.RequestCommand{ URL: targetURI, TargetAction: geminiprotocol.DOWNLOAD }
 		return true
 	}
 
 	// Going to a link by its index
-	if strings.HasPrefix(command, ":") {
-		var LinkIndex, err = strconv.Atoi(strings.ReplaceAll(command, ":", ""))
-		if err != nil || LinkIndex >= len(CurrentTab.CurrentPage.Links) {
-			return true
-		}
+	var LinkIndex, err = strconv.Atoi(strings.ReplaceAll(command, ":", ""))
+	if err == nil && LinkIndex < len(CurrentTab.CurrentPage.Links) {
 		command = CurrentTab.CurrentPage.Links[LinkIndex]
 	}
 
@@ -211,4 +230,23 @@ func HandleCommand(command string, CurrentTab *Tab, requestChan chan geminiproto
 	}
 
 	return true
+}
+
+func getURIFromArgument(arg string, CurrentTab *Tab) string {
+	var trg = arg
+	var LinkIndex, err = strconv.Atoi(arg)
+	if err == nil && LinkIndex < len(CurrentTab.CurrentPage.Links) {
+		trg = CurrentTab.CurrentPage.Links[LinkIndex]
+	}
+	if strings.HasPrefix(trg, "gemini") || strings.HasPrefix(trg, "file") {
+		if !strings.HasSuffix(trg, "/") && !geminiprotocol.IsAnEndpoint(trg) {
+			trg = strings.Join([]string{trg ,"/"}, "")
+		}
+		return trg
+	}
+	if slices.Contains(CurrentTab.CurrentPage.Links, trg) {
+		var newURI = geminiprotocol.AppendToLink(CurrentTab.CurrentPage.URI, trg)
+		return newURI
+	}
+	return trg
 }

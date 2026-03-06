@@ -3,8 +3,10 @@ package main
 import (
 	geminiprotocol "WillSmith/GeminiProtocol"
 	globalstate "WillSmith/GlobalState"
+	localresources "WillSmith/LocalResources"
 	logger "WillSmith/Logger"
 	tuihandlers "WillSmith/TUIHandlers"
+	"fmt"
 )
 
 // The main app flow
@@ -21,14 +23,14 @@ func main() {
 	// Initial size
 
 	// CHANNELING
-	var ControlChan = make(chan int, globalstate.State.ChannelLengths.ControlChannel)
 	var RequestChan = make(chan geminiprotocol.RequestCommand, globalstate.State.ChannelLengths.RequestChannel)
 	var TerminationChan = make(chan bool, globalstate.State.ChannelLengths.RequestChannel)
 	
 	// STARTING COROUTINES
-	var CommandsChannel = tuihandlers.CreateCommandChannel(&ControlChan)
-	var ResponceChannel = geminiprotocol.CreateConnectionTask(&RequestChan, &TerminationChan, &ControlChan)
-	var ScreenInfoChannel = tuihandlers.GetScreenChannel(&ControlChan)
+	// var CommandsChannel = tuihandlers.CreateCommandChannel(&ControlChan)
+	var CommandsChannel, EchoChannel = tuihandlers.CreateInputHandler()
+	var ResponceChannel, DownloadChannel = geminiprotocol.CreateConnectionTask(&RequestChan, &TerminationChan)
+	var ScreenInfoChannel = tuihandlers.GetScreenChannel()
 	logger.CreateLoggingTask()
 	geminiprotocol.InitCache()
 
@@ -37,11 +39,10 @@ func main() {
 
 	// Handling events
 	for {
-		CommandType := <- ControlChan
-		switch CommandType{
-
-		case geminiprotocol.CON_CHAN_ID:
-			var responce = <- *ResponceChannel
+		// logger.SendInfo("Listening")
+		select {
+		case responce := <- *ResponceChannel:
+			// logger.SendInfo("Drawing")
 			CurrentTab.PendingRequests -= 1
 			if CurrentTab.PendingRequests < 0 {
 				CurrentTab.PendingRequests = 0
@@ -53,20 +54,30 @@ func main() {
 			tuihandlers.RenderPage(&CurrentTab)
 			continue
 
-		case tuihandlers.SCR_CHN_ID:
-			var NewSize = <- ScreenInfoChannel
+		case NewSize := <- ScreenInfoChannel:
+			// logger.SendInfo("Rescaling")
 			CurrentTab.ScreenInfo = NewSize
 			CurrentTab.CurrentPage = *tuihandlers.ParseRequest(&CurrentTab.CurrentResp, CurrentTab.ScreenInfo)
 			tuihandlers.RenderPage(&CurrentTab)
+			continue
 
-		case tuihandlers.CMD_CHAN_ID:
-			var command = <- CommandsChannel
+		case command := <- CommandsChannel:
+			logger.SendInfo(fmt.Sprintf("Comand: %s", command))
 			if !(tuihandlers.HandleCommand(command, &CurrentTab, RequestChan, TerminationChan)) {
 				tuihandlers.ClearConsole()
 				return
 			}
 			tuihandlers.RenderPage(&CurrentTab)
-			continue 
+			continue
+
+		case resp := <- *DownloadChannel:
+			localresources.Download(resp.URI, resp.Body)
+			continue
+
+		case char := <- EchoChannel:
+			logger.SendInfo("Echo")
+			fmt.Printf(string(char))
+			continue
 
 		}
 	}
