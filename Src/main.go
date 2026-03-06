@@ -71,6 +71,10 @@ func main() {
 			continue
 
 		case resp := <- *DownloadChannel:
+			if resp.ResultCode < 20 || resp.ResultCode > 29 {
+				logger.SendWarning(fmt.Sprintf("The downloading of %s failed. Result code: %d", resp.URI, resp.ResultCode))
+				continue
+			}
 			localresources.Download(resp.URI, resp.Body)
 			continue
 
